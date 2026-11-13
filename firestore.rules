@@ -85,7 +85,7 @@ service cloud.firestore {
         && (!('description' in data) || (data.description is string && data.description.size() <= 600))
         && data.language is string && data.language.size() >= 1 && data.language.size() <= 40
         && data.moodId is string && data.moodId.size() >= 1 && data.moodId.size() <= 40
-        && data.provider in ['youtube', 'audio']
+        && data.provider in ['youtube', 'audio', 'pending']
         && data.providerTrackId is string && data.providerTrackId.size() >= 1 && data.providerTrackId.size() <= 512
         && (!('audioUrl' in data) || (data.audioUrl is string && data.audioUrl.size() <= 1024))
         && data.artworkUrl is string && data.artworkUrl.size() <= 1024

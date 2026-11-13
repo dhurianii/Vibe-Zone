@@ -77,7 +77,7 @@ export function HomeView({ onNavigate }: HomeViewProps) {
               onClick={() => onNavigate('explore')}
               className="inline-flex items-center gap-2 px-4 py-3 min-h-[48px] rounded-xl text-sm font-medium text-slate-300 hover:text-white transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
             >
-              <span>Explore all 10 moods</span>
+              <span>Explore all {moods.length} moods</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

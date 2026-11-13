@@ -39,6 +39,7 @@ interface PlayerContextValue {
   moods: MoodCategory[];
   languages: string[];
   hasCloudCatalog: boolean;
+  needsWorkoutMigration: boolean;
   getMood: (moodId: MoodId) => MoodCategory;
   getMoodTracks: (moodId: MoodId, language?: LanguageFilter) => Track[];
   currentTrack: Track | null;
@@ -95,16 +96,50 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const [cloudSongs, setCloudSongs] = useState<Track[]>([]);
   const [hasCloudCatalog, setHasCloudCatalog] = useState(false);
+  const [needsWorkoutMigration, setNeedsWorkoutMigration] = useState(false);
   const [moods, setMoods] = useState<MoodCategory[]>(STATIC_MOODS);
   const [languages, setLanguages] = useState<string[]>(DEFAULT_LANGUAGES);
 
-  // Merge cloud songs when available; fall back to starter catalog before seeding
+  // Merge cloud songs when available; bridge new Workout tracks seamlessly if Firestore hasn't migrated yet
   const tracks = useMemo(() => {
-    if (cloudSongs.length > 0) {
+    if (cloudSongs.length === 0) {
+      return STATIC_TRACKS;
+    }
+    if (!needsWorkoutMigration) {
       return cloudSongs;
     }
-    return STATIC_TRACKS;
-  }, [cloudSongs]);
+
+    const normalizeKey = (title: string) =>
+      title
+        .toLowerCase()
+        .replace(/\(.*?\)/g, '')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .trim();
+
+    const patchedCloud = cloudSongs.map((t) => {
+      if (t.id === 'wk-hi-1' && t.providerTrackId === 'uQF7_gAW4W0') {
+        const freshZinda = STATIC_TRACKS.find((s) => s.id === 'wk-hi-1');
+        return freshZinda ?? t;
+      }
+      return t;
+    });
+
+    const seenIds = new Set(patchedCloud.map((t) => t.id));
+    const seenWorkoutTitles = new Set(
+      patchedCloud
+        .filter((t) => t.moodId === 'workout')
+        .map((t) => normalizeKey(t.title))
+    );
+
+    const missingWorkout = STATIC_TRACKS.filter(
+      (t) =>
+        t.moodId === 'workout' &&
+        !seenIds.has(t.id) &&
+        !seenWorkoutTitles.has(normalizeKey(t.title))
+    );
+
+    return [...patchedCloud, ...missingWorkout];
+  }, [cloudSongs, needsWorkoutMigration]);
 
   // Ensure any custom language present on tracks also appears in language filters
   const availableLanguages = useMemo(() => {
@@ -117,7 +152,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const getMood = useCallback(
     (moodId: MoodId): MoodCategory => {
-      return moods.find((m) => m.id === moodId) ?? moods[0] ?? STATIC_MOODS[0];
+      const normalized = (moodId as string) === 'motivation' ? 'workout' : moodId;
+      return moods.find((m) => m.id === normalized) ?? moods[0] ?? STATIC_MOODS[0];
     },
     [moods]
   );
@@ -183,8 +219,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setCloudSongs(items);
       setHasCloudCatalog(items.length > 0);
     });
-    const unsubMoods = subscribeToMoods((items) => {
+    const unsubMoods = subscribeToMoods((items, needsMigration) => {
       setMoods(items);
+      setNeedsWorkoutMigration(Boolean(needsMigration));
     });
     const unsubLanguages = subscribeToLanguages((items) => {
       setLanguages(items);
@@ -248,6 +285,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const playTrack = useCallback(
     (track: Track, customQueue?: Track[]) => {
+      if (track.provider === 'pending') {
+        setErrorMessage(
+          `"${track.title}" is saved as Source Pending. Add a verified YouTube ID or authorized audio link in the Admin Panel to stream it.`
+        );
+        return;
+      }
+
       setErrorMessage(null);
       setCurrentTrack(track);
       setActiveMoodId(track.moodId);
@@ -258,7 +302,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         setQueue(customQueue);
       } else {
         const moodQueue = tracksRef.current.filter(
-          (t) => t.moodId === track.moodId
+          (t) => t.moodId === track.moodId && t.provider !== 'pending'
         );
         setQueue(moodQueue.length > 0 ? moodQueue : [track]);
       }
@@ -284,7 +328,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   );
 
   const nextTrack = useCallback(() => {
-    const activeQueue = queueRef.current;
+    const activeQueue = queueRef.current.filter((t) => t.provider !== 'pending');
     const active = currentTrackRef.current;
     if (activeQueue.length === 0) return;
 
@@ -299,7 +343,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, [playTrack]);
 
   const previousTrack = useCallback(() => {
-    const activeQueue = queueRef.current;
+    const activeQueue = queueRef.current.filter((t) => t.provider !== 'pending');
     const active = currentTrackRef.current;
     if (activeQueue.length === 0) return;
 
@@ -388,9 +432,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       const filtered = getMoodTracks(moodId, languageFilter);
       const moodTracks =
         filtered.length > 0 ? filtered : getMoodTracks(moodId, 'All');
-      if (moodTracks.length === 0) return;
+      const playable = moodTracks.filter((t) => t.provider !== 'pending');
+      const targetList = playable.length > 0 ? playable : moodTracks;
+      if (targetList.length === 0) return;
 
-      let ordered = [...moodTracks];
+      let ordered = [...targetList];
       if (shuffle) {
         ordered = ordered.sort(() => Math.random() - 0.5);
       }
@@ -507,6 +553,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     moods,
     languages: availableLanguages,
     hasCloudCatalog,
+    needsWorkoutMigration,
     getMood,
     getMoodTracks,
     currentTrack,

@@ -25,7 +25,7 @@ export function ExploreView() {
           Explore Moods
         </h1>
         <p className="mt-2 text-sm sm:text-base text-slate-400 max-w-2xl">
-          Switch effortlessly between all 10 atmospheric channels to match your energy, activity, or state of mind.
+          Switch effortlessly between all {moods.length} atmospheric channels to match your energy, activity, or state of mind.
         </p>
       </div>
 

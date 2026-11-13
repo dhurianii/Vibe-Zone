@@ -43,6 +43,7 @@ export function TrackList({
     <div className="rounded-2xl border border-white/[0.08] bg-[#0C0F17]/90 divide-y divide-white/[0.06] overflow-hidden">
       {tracks.map((track, index) => {
         const isCurrent = currentTrack?.id === track.id;
+        const isPending = track.provider === 'pending';
         const isPlaying = isCurrent && (status === 'playing' || status === 'loading');
         const fav = isFavourite(track.id);
         const mood = getMood(track.moodId);
@@ -79,6 +80,10 @@ export function TrackList({
             <div className="w-7 shrink-0 flex items-center justify-center">
               {isPlaying ? (
                 <Pause className="w-4 h-4 text-indigo-400 fill-current" />
+              ) : isPending ? (
+                <span className="font-mono text-xs tabular-nums text-slate-500">
+                  {String(index + 1).padStart(2, '0')}
+                </span>
               ) : (
                 <>
                   <span
@@ -107,7 +112,11 @@ export function TrackList({
             <div className="min-w-0 flex-1">
               <p
                 className={`text-sm sm:text-[15px] font-medium truncate ${
-                  isCurrent ? 'text-indigo-300' : 'text-slate-100'
+                  isCurrent
+                    ? 'text-indigo-300'
+                    : isPending
+                      ? 'text-slate-300'
+                      : 'text-slate-100'
                 }`}
               >
                 {track.title}
@@ -129,14 +138,18 @@ export function TrackList({
               </div>
             </div>
 
-            {/* Duration / Live */}
+            {/* Duration / Live / Source Pending */}
             <div className="hidden xs:block sm:block text-right shrink-0">
               <span
                 className={`font-mono text-xs tabular-nums ${
-                  track.isLive ? 'text-blue-400 font-medium' : 'text-slate-400'
+                  isPending
+                    ? 'text-amber-300/90 font-sans font-medium'
+                    : track.isLive
+                      ? 'text-blue-400 font-medium'
+                      : 'text-slate-400'
                 }`}
               >
-                {track.durationLabel}
+                {isPending ? 'Source Pending' : track.durationLabel}
               </span>
             </div>
 

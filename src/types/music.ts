@@ -4,7 +4,6 @@ export type MoodId =
   | 'sad'
   | 'romantic'
   | 'travel'
-  | 'motivation'
   | 'focus'
   | 'party'
   | 'devotional'
@@ -18,7 +17,7 @@ export type SectionView =
   | 'favourites'
   | 'admin';
 
-export type ProviderType = 'youtube' | 'audio';
+export type ProviderType = 'youtube' | 'audio' | 'pending';
 
 export type TrackLanguage = string;
 

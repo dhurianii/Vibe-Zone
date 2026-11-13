@@ -18,6 +18,7 @@ import { auth, googleAuthProvider } from '../../lib/firebase';
 import {
   deleteSongFromFirestore,
   seedStarterCatalogIfEmpty,
+  syncWorkoutCatalogUpgrade,
   verifyAdminAccess,
 } from '../../services/catalogService';
 import { Track } from '../../types/music';
@@ -29,7 +30,14 @@ interface AdminViewProps {
 }
 
 export function AdminView({ onExitAdmin }: AdminViewProps) {
-  const { tracks, moods, languages, hasCloudCatalog, getMood } = usePlayer();
+  const {
+    tracks,
+    moods,
+    languages,
+    hasCloudCatalog,
+    needsWorkoutMigration,
+    getMood,
+  } = usePlayer();
 
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
@@ -72,19 +80,34 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     return () => unsub();
   }, []);
 
-  // Auto-sync starter catalog to Firestore once when an authorized admin visits
+  // Auto-sync starter catalog or Workout merge migration once when authorized admin visits
   useEffect(() => {
-    if (!isAuthorized || hasCloudCatalog) return;
+    if (!isAuthorized) return;
+    if (hasCloudCatalog && !needsWorkoutMigration) return;
+
     let cancelled = false;
     setIsSyncing(true);
-    seedStarterCatalogIfEmpty()
-      .then((res) => {
-        if (!cancelled && res.seededSongs > 0) {
-          setFeedbackMessage(
-            `Synced ${res.seededSongs} starter songs to Firestore.`
-          );
-        }
-      })
+
+    const task = !hasCloudCatalog
+      ? seedStarterCatalogIfEmpty().then((res) => {
+          if (!cancelled && res.seededSongs > 0) {
+            setFeedbackMessage(
+              `Synced ${res.seededSongs} starter songs to Firestore.`
+            );
+          }
+        })
+      : syncWorkoutCatalogUpgrade().then((res) => {
+          if (
+            !cancelled &&
+            (res.mergedMood || res.migratedSongs > 0 || res.addedSongs > 0)
+          ) {
+            setFeedbackMessage(
+              `Merged Motivation into WORKOUT 🔥 and synced ${res.addedSongs} new Workout songs.`
+            );
+          }
+        });
+
+    task
       .catch(() => {
         // Admin can also trigger manual sync if needed
       })
@@ -94,7 +117,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [hasCloudCatalog, isAuthorized]);
+  }, [hasCloudCatalog, isAuthorized, needsWorkoutMigration]);
 
   const handleGoogleSignIn = async () => {
     setAuthError(null);
@@ -120,13 +143,20 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     setActionError(null);
     setIsSyncing(true);
     try {
-      const res = await seedStarterCatalogIfEmpty();
-      if (res.seededSongs > 0 || res.seededMoods > 0) {
-        setFeedbackMessage(
-          `Synced ${res.seededSongs} songs, ${res.seededMoods} moods, and ${res.seededLanguages} languages.`
-        );
+      if (!hasCloudCatalog) {
+        const res = await seedStarterCatalogIfEmpty();
+        if (res.seededSongs > 0 || res.seededMoods > 0) {
+          setFeedbackMessage(
+            `Synced ${res.seededSongs} songs, ${res.seededMoods} moods, and ${res.seededLanguages} languages.`
+          );
+        } else {
+          setFeedbackMessage('Cloud catalog is already synced.');
+        }
       } else {
-        setFeedbackMessage('Cloud catalog is already synced.');
+        const res = await syncWorkoutCatalogUpgrade();
+        setFeedbackMessage(
+          `Synced WORKOUT 🔥 catalog (${res.addedSongs} added, ${res.migratedSongs} migrated).`
+        );
       }
     } catch (err) {
       setActionError(
@@ -291,7 +321,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {!hasCloudCatalog && (
+          {(!hasCloudCatalog || needsWorkoutMigration) && (
             <button
               type="button"
               onClick={handleManualSync}
@@ -303,7 +333,9 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               ) : (
                 <Database className="w-4 h-4" />
               )}
-              <span>Sync Starter Catalog</span>
+              <span>
+                {!hasCloudCatalog ? 'Sync Starter Catalog' : 'Sync WORKOUT Upgrade'}
+              </span>
             </button>
           )}
 
@@ -524,6 +556,10 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
                             <span className="font-mono text-slate-300">
                               {track.providerTrackId}
                             </span>
+                          </span>
+                        ) : track.provider === 'pending' ? (
+                          <span className="font-medium text-amber-300">
+                            Source Pending
                           </span>
                         ) : (
                           <span>Authorized Audio</span>

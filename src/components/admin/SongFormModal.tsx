@@ -68,7 +68,11 @@ export function SongFormModal({
       const knownLang = languages.includes(editingTrack.language);
       setLanguage(knownLang ? editingTrack.language : '__custom__');
       setCustomLanguage(knownLang ? '' : editingTrack.language);
-      setMoodId(editingTrack.moodId);
+      const safeMoodId =
+        (editingTrack.moodId as string) === 'motivation'
+          ? 'workout'
+          : editingTrack.moodId;
+      setMoodId(safeMoodId);
       setProvider(editingTrack.provider);
       setYoutubeInput(
         editingTrack.provider === 'youtube' ? editingTrack.providerTrackId : ''
@@ -88,7 +92,7 @@ export function SongFormModal({
       setDescription('');
       setLanguage(languages[0] ?? 'Hindi');
       setCustomLanguage('');
-      setMoodId(moods[0]?.id ?? 'chill');
+      setMoodId(moods[0]?.id ?? 'workout');
       setProvider('youtube');
       setYoutubeInput('');
       setAudioUrl('');
@@ -204,7 +208,7 @@ export function SongFormModal({
         return;
       }
       providerTrackId = ytId;
-    } else {
+    } else if (provider === 'audio') {
       const cleanAudio = audioUrl.trim();
       if (!cleanAudio) {
         setError(
@@ -220,6 +224,8 @@ export function SongFormModal({
       }
       providerTrackId = cleanAudio;
       resolvedAudioUrl = cleanAudio;
+    } else {
+      providerTrackId = 'SOURCE_PENDING';
     }
 
     const finalArtwork =
@@ -228,12 +234,16 @@ export function SongFormModal({
         ? `https://i.ytimg.com/vi/${providerTrackId}/hqdefault.jpg`
         : moods.find((m) => m.id === moodId)?.coverImage ?? '');
 
-    const finalDurationLabel = isLive
-      ? 'LIVE'
-      : durationLabel.trim() || '3:30';
-    const finalDurationSeconds = isLive
-      ? 0
-      : parseDurationToSeconds(finalDurationLabel) || 210;
+    const finalDurationLabel =
+      provider === 'pending'
+        ? durationLabel.trim() || '--:--'
+        : isLive
+          ? 'LIVE'
+          : durationLabel.trim() || '3:30';
+    const finalDurationSeconds =
+      provider === 'pending' || isLive
+        ? 0
+        : parseDurationToSeconds(finalDurationLabel) || 210;
 
     const moodObj = moods.find((m) => m.id === moodId);
     const keywords = Array.from(
@@ -450,6 +460,7 @@ export function SongFormModal({
                 >
                   <option value="youtube">YouTube Official IFrame API</option>
                   <option value="audio">Authorized Audio File / URL</option>
+                  <option value="pending">Source Pending (Save without link yet)</option>
                 </select>
               </label>
 
@@ -460,8 +471,14 @@ export function SongFormModal({
                   </span>
                   <input
                     type="text"
-                    disabled={isLive}
-                    value={isLive ? 'LIVE' : durationLabel}
+                    disabled={isLive || provider === 'pending'}
+                    value={
+                      provider === 'pending'
+                        ? '--:--'
+                        : isLive
+                          ? 'LIVE'
+                          : durationLabel
+                    }
                     onChange={(e) => setDurationLabel(e.target.value)}
                     placeholder="3:45"
                     className="w-full h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#07080B] font-mono text-sm text-white disabled:opacity-50 focus:outline-none focus:border-indigo-500"
@@ -472,6 +489,7 @@ export function SongFormModal({
                   <input
                     type="checkbox"
                     checked={isLive}
+                    disabled={provider === 'pending'}
                     onChange={(e) => setIsLive(e.target.checked)}
                     className="rounded border-white/20 text-indigo-600 focus:ring-indigo-500"
                   />
@@ -499,7 +517,7 @@ export function SongFormModal({
                   </p>
                 )}
               </label>
-            ) : (
+            ) : provider === 'audio' ? (
               <div className="space-y-3">
                 <label className="block space-y-1.5">
                   <span className="text-xs font-medium text-slate-300">
@@ -531,6 +549,10 @@ export function SongFormModal({
                     </label>
                   </div>
                 </label>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-xs text-amber-200 leading-relaxed">
+                This song will be saved as <span className="font-semibold">Source Pending</span> until you switch the provider above to YouTube or Authorized Audio and attach a verified source link.
               </div>
             )}
           </div>

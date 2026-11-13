@@ -106,6 +106,12 @@ export async function verifyAdminAccess(uid: string, email: string | null, email
   }
 }
 
+function normalizeMoodId(rawMoodId: unknown): MoodId {
+  const id = String(rawMoodId ?? 'chill');
+  if (id === 'motivation') return 'workout';
+  return id as MoodId;
+}
+
 export function subscribeToSongs(
   onData: (songs: Track[]) => void,
   onError?: (err: Error) => void
@@ -117,11 +123,17 @@ export function subscribeToSongs(
     q,
     (snapshot) => {
       const moodMap = new Map(MOOD_CATEGORIES.map((m) => [m.id, m]));
-      const items: Track[] = snapshot.docs.map((docSnap) => {
+      const rawItems: Track[] = snapshot.docs.map((docSnap) => {
         const data = docSnap.data();
-        const moodId = (data.moodId as MoodId) || 'chill';
+        const moodId = normalizeMoodId(data.moodId);
         const fallbackArtwork =
           moodMap.get(moodId)?.coverImage ?? MOOD_CATEGORIES[0].coverImage;
+        const provider: ProviderType =
+          data.provider === 'audio'
+            ? 'audio'
+            : data.provider === 'pending'
+              ? 'pending'
+              : 'youtube';
 
         return {
           id: String(data.id ?? docSnap.id),
@@ -134,7 +146,7 @@ export function subscribeToSongs(
               : undefined,
           language: String(data.language ?? 'Hindi'),
           moodId,
-          provider: data.provider === 'audio' ? 'audio' : 'youtube',
+          provider,
           providerTrackId: String(data.providerTrackId ?? ''),
           audioUrl:
             typeof data.audioUrl === 'string' && data.audioUrl
@@ -152,6 +164,13 @@ export function subscribeToSongs(
             typeof data.createdBy === 'string' ? data.createdBy : undefined,
         };
       });
+
+      // Guard against duplicate Zinda if legacy mt-hi-2 still exists in Firestore
+      const hasPrimaryZinda = rawItems.some((item) => item.id === 'wk-hi-1');
+      const items = rawItems.filter(
+        (item) => !(hasPrimaryZinda && item.id === 'mt-hi-2')
+      );
+
       onData(items);
     },
     (error) => {
@@ -167,7 +186,7 @@ export function subscribeToSongs(
 }
 
 export function subscribeToMoods(
-  onData: (moods: MoodCategory[]) => void
+  onData: (moods: MoodCategory[], needsWorkoutMigration?: boolean) => void
 ): () => void {
   const path = 'moods';
   const q = query(collection(db, path), orderBy('sortOrder', 'asc'));
@@ -176,34 +195,66 @@ export function subscribeToMoods(
     q,
     (snapshot) => {
       if (snapshot.empty) {
-        onData(MOOD_CATEGORIES);
+        onData(MOOD_CATEGORIES, false);
         return;
       }
       const staticMap = new Map(MOOD_CATEGORIES.map((m) => [m.id, m]));
-      const items: MoodCategory[] = snapshot.docs.map((docSnap) => {
+      let hasLegacyMotivationDoc = false;
+      let hasLegacyWorkoutName = false;
+
+      const items: MoodCategory[] = [];
+      snapshot.docs.forEach((docSnap) => {
         const d = docSnap.data();
-        const id = String(d.id ?? docSnap.id) as MoodId;
+        const rawId = String(d.id ?? docSnap.id);
+        if (rawId === 'motivation') {
+          hasLegacyMotivationDoc = true;
+          return;
+        }
+        const id = rawId as MoodId;
         const fallback = staticMap.get(id);
-        return {
+        const isWorkout = id === 'workout';
+        if (isWorkout && (String(d.name ?? '') !== 'WORKOUT' || String(d.emoji ?? '') !== '🔥')) {
+          hasLegacyWorkoutName = true;
+        }
+
+        items.push({
           id,
-          name: String(d.name ?? fallback?.name ?? id),
-          emoji: String(d.emoji ?? fallback?.emoji ?? '🎵'),
-          description: String(d.description ?? fallback?.description ?? ''),
-          curatorNote: String(d.curatorNote ?? fallback?.curatorNote ?? ''),
-          accentFrom: String(d.accentFrom ?? fallback?.accentFrom ?? '#6366F1'),
-          accentTo: String(d.accentTo ?? fallback?.accentTo ?? '#3B82F6'),
-          glowColor: String(
-            d.glowColor ?? fallback?.glowColor ?? 'rgba(99, 102, 241, 0.28)'
-          ),
+          name: isWorkout
+            ? 'WORKOUT'
+            : String(d.name ?? fallback?.name ?? id),
+          emoji: isWorkout
+            ? '🔥'
+            : String(d.emoji ?? fallback?.emoji ?? '🎵'),
+          description: isWorkout && fallback
+            ? fallback.description
+            : String(d.description ?? fallback?.description ?? ''),
+          curatorNote: isWorkout && fallback
+            ? fallback.curatorNote
+            : String(d.curatorNote ?? fallback?.curatorNote ?? ''),
+          accentFrom: isWorkout && fallback
+            ? fallback.accentFrom
+            : String(d.accentFrom ?? fallback?.accentFrom ?? '#6366F1'),
+          accentTo: isWorkout && fallback
+            ? fallback.accentTo
+            : String(d.accentTo ?? fallback?.accentTo ?? '#3B82F6'),
+          glowColor: isWorkout && fallback
+            ? fallback.glowColor
+            : String(
+                d.glowColor ?? fallback?.glowColor ?? 'rgba(99, 102, 241, 0.28)'
+              ),
           coverImage: fallback?.coverImage ?? String(d.coverImage ?? ''),
           sortOrder: Number(d.sortOrder ?? 0),
-        };
+        });
       });
-      onData(items);
+
+      onData(
+        items.length > 0 ? items : MOOD_CATEGORIES,
+        hasLegacyMotivationDoc || hasLegacyWorkoutName
+      );
     },
     () => {
       // Gracefully keep starter moods if read fails
-      onData(MOOD_CATEGORIES);
+      onData(MOOD_CATEGORIES, false);
     }
   );
 }
@@ -298,7 +349,7 @@ export async function seedStarterCatalogIfEmpty(): Promise<{
     const batch = writeBatch(db);
     TRACKS.forEach((track) => {
       const safeId = track.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-      batch.set(doc(db, 'songs', safeId), {
+      const docPayload: Record<string, unknown> = {
         id: safeId,
         title: track.title.slice(0, 160),
         artist: track.artist.slice(0, 160),
@@ -314,13 +365,164 @@ export async function seedStarterCatalogIfEmpty(): Promise<{
         createdBy: user.uid,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-      });
+      };
+      if (track.album) {
+        docPayload.album = track.album.slice(0, 160);
+      }
+      if (track.description) {
+        docPayload.description = track.description.slice(0, 600);
+      }
+      batch.set(doc(db, 'songs', safeId), docPayload);
     });
     await batch.commit();
     seededSongs = TRACKS.length;
   }
 
   return { seededSongs, seededMoods, seededLanguages };
+}
+
+/**
+ * Migrates an existing pre-merge Firestore catalog so:
+ * 1. `motivation` mood is merged into `WORKOUT 🔥` and deleted.
+ * 2. Any existing songs under `motivation` are moved to `workout` without duplicating.
+ * 3. Any missing songs from the 36+ curated Workout list are added to Firestore.
+ */
+export async function syncWorkoutCatalogUpgrade(): Promise<{
+  migratedSongs: number;
+  addedSongs: number;
+  mergedMood: boolean;
+}> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Admin authentication required to migrate Workout catalog.');
+  }
+
+  let migratedSongs = 0;
+  let addedSongs = 0;
+  let mergedMood = false;
+
+  const batch = writeBatch(db);
+  const workoutMood = MOOD_CATEGORIES.find((m) => m.id === 'workout')!;
+
+  // 1. Update moods/workout and delete moods/motivation if present
+  const moodsSnap = await getDocs(collection(db, 'moods'));
+  const motivationMoodDoc = moodsSnap.docs.find((d) => d.id === 'motivation');
+  const workoutMoodDoc = moodsSnap.docs.find((d) => d.id === 'workout');
+
+  if (
+    motivationMoodDoc ||
+    !workoutMoodDoc ||
+    workoutMoodDoc.data().name !== 'WORKOUT' ||
+    workoutMoodDoc.data().emoji !== '🔥'
+  ) {
+    batch.set(doc(db, 'moods', 'workout'), {
+      id: workoutMood.id,
+      name: workoutMood.name,
+      emoji: workoutMood.emoji,
+      description: workoutMood.description,
+      curatorNote: workoutMood.curatorNote,
+      accentFrom: workoutMood.accentFrom,
+      accentTo: workoutMood.accentTo,
+      glowColor: workoutMood.glowColor,
+      coverImage: workoutMood.coverImage,
+      sortOrder: 0,
+      updatedAt: serverTimestamp(),
+    });
+    if (motivationMoodDoc) {
+      batch.delete(doc(db, 'moods', 'motivation'));
+    }
+    mergedMood = true;
+  }
+
+  // 2. Migrate existing motivation songs -> workout & fix legacy Zinda duplicate
+  const songsSnap = await getDocs(collection(db, 'songs'));
+  const existingIds = new Set<string>();
+  const existingNormalizedKeys = new Set<string>();
+
+  const normalizeKey = (title: string) =>
+    title
+      .toLowerCase()
+      .replace(/\(.*?\)/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+
+  songsSnap.docs.forEach((d) => {
+    const data = d.data();
+    existingIds.add(d.id);
+    if (normalizeMoodId(data.moodId) === 'workout') {
+      existingNormalizedKeys.add(normalizeKey(String(data.title ?? '')));
+    }
+
+    if (d.id === 'mt-hi-2') {
+      // Remove duplicate Zinda from motivation
+      batch.delete(doc(db, 'songs', d.id));
+      migratedSongs += 1;
+      return;
+    }
+
+    if (d.id === 'wk-hi-1' && data.providerTrackId === 'uQF7_gAW4W0') {
+      batch.update(doc(db, 'songs', d.id), {
+        title: 'Zinda',
+        album: 'Bhaag Milkha Bhaag',
+        providerTrackId: 'gdqFLjWU8x8',
+        artworkUrl: 'https://i.ytimg.com/vi/gdqFLjWU8x8/hqdefault.jpg',
+        moodId: 'workout',
+        updatedAt: serverTimestamp(),
+      });
+      migratedSongs += 1;
+      return;
+    }
+
+    if (data.moodId === 'motivation') {
+      batch.update(doc(db, 'songs', d.id), {
+        moodId: 'workout',
+        updatedAt: serverTimestamp(),
+      });
+      migratedSongs += 1;
+    }
+  });
+
+  // 3. Add missing Workout songs from static catalog (deduplicated)
+  const workoutStarterTracks = TRACKS.filter((t) => t.moodId === 'workout');
+  workoutStarterTracks.forEach((track) => {
+    const safeId = track.id.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const normTitle = normalizeKey(track.title);
+    if (existingIds.has(safeId) || existingNormalizedKeys.has(normTitle)) {
+      return;
+    }
+
+    const docPayload: Record<string, unknown> = {
+      id: safeId,
+      title: track.title.slice(0, 160),
+      artist: track.artist.slice(0, 160),
+      language: track.language.slice(0, 40),
+      moodId: 'workout',
+      provider: track.provider,
+      providerTrackId: track.providerTrackId.slice(0, 512),
+      artworkUrl: track.artworkUrl.slice(0, 1024),
+      durationLabel: track.durationLabel.slice(0, 20),
+      durationSeconds: Math.min(86400, Math.max(0, Math.round(track.durationSeconds))),
+      isLive: Boolean(track.isLive),
+      keywords: track.keywords.slice(0, 20),
+      createdBy: user.uid,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    };
+    if (track.album) {
+      docPayload.album = track.album.slice(0, 160);
+    }
+    if (track.description) {
+      docPayload.description = track.description.slice(0, 600);
+    }
+    batch.set(doc(db, 'songs', safeId), docPayload);
+    addedSongs += 1;
+  });
+
+  if (mergedMood || migratedSongs > 0 || addedSongs > 0) {
+    await batch.commit();
+  }
+
+  return { migratedSongs, addedSongs, mergedMood };
 }
 
 export async function ensureLanguageExists(languageName: string): Promise<void> {
@@ -354,6 +556,7 @@ export function findDuplicateSong(
     existingSongs.find((song) => {
       if (excludeSongId && song.id === excludeSongId) return false;
       const sameProviderTrack =
+        input.provider !== 'pending' &&
         song.provider === input.provider &&
         song.providerTrackId.trim().toLowerCase() === normProviderId;
       const sameTitleAndArtist =

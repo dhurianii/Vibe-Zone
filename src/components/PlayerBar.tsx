@@ -14,7 +14,6 @@ import {
   X,
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
-import { getMoodById } from '../data/moodsAndTracks';
 import { formatTime } from '../utils/formatTime';
 import { ArtworkImage } from './ArtworkImage';
 
@@ -38,13 +37,14 @@ export function PlayerBar() {
     toggleFavourite,
     isFavourite,
     clearError,
+    getMood,
   } = usePlayer();
 
   if (!currentTrack) {
     return null;
   }
 
-  const mood = getMoodById(currentTrack.moodId);
+  const mood = getMood(currentTrack.moodId);
   const fav = isFavourite(currentTrack.id);
   const isPlaying = status === 'playing';
   const isLoading = status === 'loading';
@@ -79,15 +79,17 @@ export function PlayerBar() {
               >
                 Skip to next track
               </button>
-              <a
-                href={`https://www.youtube.com/watch?v=${currentTrack.providerTrackId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-slate-300 hover:text-white inline-flex items-center gap-1"
-              >
-                <span>Watch on YouTube</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
+              {currentTrack.provider === 'youtube' && (
+                <a
+                  href={`https://www.youtube.com/watch?v=${currentTrack.providerTrackId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-slate-300 hover:text-white inline-flex items-center gap-1"
+                >
+                  <span>Watch on YouTube</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
             </div>
           </div>
           <button

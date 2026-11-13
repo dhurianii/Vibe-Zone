@@ -1,24 +1,22 @@
 import { Play, Shuffle } from 'lucide-react';
 import { usePlayer } from '../../context/PlayerContext';
-import {
-  MOOD_CATEGORIES,
-  getMoodById,
-  getTracksByMood,
-} from '../../data/moodsAndTracks';
 import { ArtworkImage } from '../ArtworkImage';
 import { LanguageTabs } from '../LanguageTabs';
 import { TrackList } from '../TrackList';
 
 export function ExploreView() {
   const {
+    moods,
+    getMood,
+    getMoodTracks,
     activeMoodId,
     setActiveMoodId,
     languageFilter,
     setLanguageFilter,
     playMood,
   } = usePlayer();
-  const mood = getMoodById(activeMoodId);
-  const tracks = getTracksByMood(activeMoodId, languageFilter);
+  const mood = getMood(activeMoodId);
+  const tracks = getMoodTracks(activeMoodId, languageFilter);
 
   return (
     <div className="space-y-8 sm:space-y-10">
@@ -37,7 +35,7 @@ export function ExploreView() {
         aria-label="Mood categories"
         className="flex flex-wrap gap-2"
       >
-        {MOOD_CATEGORIES.map((item) => {
+        {moods.map((item) => {
           const active = item.id === activeMoodId;
           return (
             <button

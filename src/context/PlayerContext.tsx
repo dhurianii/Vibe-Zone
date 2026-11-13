@@ -7,13 +7,25 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { MOOD_CATEGORIES, TRACKS, getTracksByMood } from '../data/moodsAndTracks';
+import {
+  MOOD_CATEGORIES as STATIC_MOODS,
+  TRACKS as STATIC_TRACKS,
+} from '../data/moodsAndTracks';
+import {
+  subscribeToLanguages,
+  subscribeToMoods,
+  subscribeToSongs,
+} from '../services/catalogService';
+import { HtmlAudioMusicProvider } from '../services/music/HtmlAudioMusicProvider';
 import { IMusicProvider } from '../services/music/IMusicProvider';
 import { YouTubeMusicProvider } from '../services/music/YouTubeMusicProvider';
 import {
+  DEFAULT_LANGUAGES,
   LanguageFilter,
+  MoodCategory,
   MoodId,
   PlaybackStatus,
+  ProviderType,
   RecentPlayEntry,
   Track,
 } from '../types/music';
@@ -23,6 +35,12 @@ const STORAGE_RECENT = 'sona_recent_v1';
 const STORAGE_VOLUME = 'sona_volume_v1';
 
 interface PlayerContextValue {
+  tracks: Track[];
+  moods: MoodCategory[];
+  languages: string[];
+  hasCloudCatalog: boolean;
+  getMood: (moodId: MoodId) => MoodCategory;
+  getMoodTracks: (moodId: MoodId, language?: LanguageFilter) => Track[];
   currentTrack: Track | null;
   queue: Track[];
   status: PlaybackStatus;
@@ -71,12 +89,56 @@ function loadStoredArray<T>(key: string, fallback: T): T {
 
 export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const providerContainerRef = useRef<HTMLDivElement | null>(null);
-  const providerRef = useRef<IMusicProvider | null>(null);
+  const ytProviderRef = useRef<IMusicProvider | null>(null);
+  const audioProviderRef = useRef<IMusicProvider | null>(null);
+  const activeProviderRef = useRef<ProviderType>('youtube');
+
+  const [cloudSongs, setCloudSongs] = useState<Track[]>([]);
+  const [hasCloudCatalog, setHasCloudCatalog] = useState(false);
+  const [moods, setMoods] = useState<MoodCategory[]>(STATIC_MOODS);
+  const [languages, setLanguages] = useState<string[]>(DEFAULT_LANGUAGES);
+
+  // Merge cloud songs when available; fall back to starter catalog before seeding
+  const tracks = useMemo(() => {
+    if (cloudSongs.length > 0) {
+      return cloudSongs;
+    }
+    return STATIC_TRACKS;
+  }, [cloudSongs]);
+
+  // Ensure any custom language present on tracks also appears in language filters
+  const availableLanguages = useMemo(() => {
+    const set = new Set<string>(languages);
+    tracks.forEach((t) => {
+      if (t.language) set.add(t.language);
+    });
+    return Array.from(set);
+  }, [languages, tracks]);
+
+  const getMood = useCallback(
+    (moodId: MoodId): MoodCategory => {
+      return moods.find((m) => m.id === moodId) ?? moods[0] ?? STATIC_MOODS[0];
+    },
+    [moods]
+  );
+
+  const getMoodTracks = useCallback(
+    (moodId: MoodId, language: LanguageFilter = 'All'): Track[] => {
+      return tracks.filter(
+        (t) =>
+          t.moodId === moodId &&
+          (language === 'All' || t.language === language)
+      );
+    },
+    [tracks]
+  );
 
   const [activeMoodId, setActiveMoodId] = useState<MoodId>('chill');
   const [languageFilter, setLanguageFilter] = useState<LanguageFilter>('All');
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
-  const [queue, setQueue] = useState<Track[]>(() => getTracksByMood('chill'));
+  const [queue, setQueue] = useState<Track[]>(() =>
+    STATIC_TRACKS.filter((t) => t.moodId === 'chill')
+  );
   const [status, setStatus] = useState<PlaybackStatus>('idle');
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -101,6 +163,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
 
   const queueRef = useRef(queue);
   const currentTrackRef = useRef(currentTrack);
+  const tracksRef = useRef(tracks);
 
   useEffect(() => {
     queueRef.current = queue;
@@ -109,6 +172,39 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     currentTrackRef.current = currentTrack;
   }, [currentTrack]);
+
+  useEffect(() => {
+    tracksRef.current = tracks;
+  }, [tracks]);
+
+  // Subscribe to Firestore live catalog
+  useEffect(() => {
+    const unsubSongs = subscribeToSongs((items) => {
+      setCloudSongs(items);
+      setHasCloudCatalog(items.length > 0);
+    });
+    const unsubMoods = subscribeToMoods((items) => {
+      setMoods(items);
+    });
+    const unsubLanguages = subscribeToLanguages((items) => {
+      setLanguages(items);
+    });
+
+    return () => {
+      unsubSongs();
+      unsubMoods();
+      unsubLanguages();
+    };
+  }, []);
+
+  // Keep currentTrack metadata synced if edited in Admin
+  useEffect(() => {
+    if (!currentTrack) return;
+    const updated = tracks.find((t) => t.id === currentTrack.id);
+    if (updated && updated !== currentTrack) {
+      setCurrentTrack(updated);
+    }
+  }, [currentTrack, tracks]);
 
   // Persist favourites
   useEffect(() => {
@@ -144,6 +240,12 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const getActiveProvider = useCallback((): IMusicProvider | null => {
+    return activeProviderRef.current === 'audio'
+      ? audioProviderRef.current
+      : ytProviderRef.current;
+  }, []);
+
   const playTrack = useCallback(
     (track: Track, customQueue?: Track[]) => {
       setErrorMessage(null);
@@ -155,13 +257,30 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       if (customQueue && customQueue.length > 0) {
         setQueue(customQueue);
       } else {
-        setQueue(getTracksByMood(track.moodId));
+        const moodQueue = tracksRef.current.filter(
+          (t) => t.moodId === track.moodId
+        );
+        setQueue(moodQueue.length > 0 ? moodQueue : [track]);
       }
 
       recordRecentPlay(track.id);
-      void providerRef.current?.loadTrack(track, true);
+
+      const nextProviderType: ProviderType =
+        track.provider === 'audio' ? 'audio' : 'youtube';
+
+      if (nextProviderType !== activeProviderRef.current) {
+        // Pause previous provider cleanly when switching between YouTube and Audio
+        getActiveProvider()?.pause();
+        activeProviderRef.current = nextProviderType;
+      }
+
+      const targetProvider =
+        nextProviderType === 'audio'
+          ? audioProviderRef.current
+          : ytProviderRef.current;
+      void targetProvider?.loadTrack(track, true);
     },
-    [recordRecentPlay]
+    [getActiveProvider, recordRecentPlay]
   );
 
   const nextTrack = useCallback(() => {
@@ -189,9 +308,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // If past 4 seconds in non-live track, restart current track first
     if (!active.isLive && currentTime > 4) {
-      providerRef.current?.seekTo(0);
+      getActiveProvider()?.seekTo(0);
       setCurrentTime(0);
       return;
     }
@@ -200,37 +318,51 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const prevIdx =
       idx === -1 ? 0 : (idx - 1 + activeQueue.length) % activeQueue.length;
     playTrack(activeQueue[prevIdx], activeQueue);
-  }, [currentTime, playTrack]);
+  }, [currentTime, getActiveProvider, playTrack]);
 
-  // Mount modular music provider once
+  // Mount both modular music providers once
   useEffect(() => {
     const container = providerContainerRef.current;
     if (!container) return;
 
-    const provider = new YouTubeMusicProvider();
-    providerRef.current = provider;
+    const ytProvider = new YouTubeMusicProvider();
+    const audioProvider = new HtmlAudioMusicProvider();
+    ytProviderRef.current = ytProvider;
+    audioProviderRef.current = audioProvider;
 
-    provider
-      .mount(container, {
-        onReady: () => {
-          provider.setVolume(volume);
-        },
-        onStatusChange: (nextStatus) => {
+    const buildCallbacks = (providerType: ProviderType) => ({
+      onReady: () => {
+        const p =
+          providerType === 'audio' ? audioProvider : ytProvider;
+        p.setVolume(volume);
+      },
+      onStatusChange: (nextStatus: PlaybackStatus) => {
+        if (activeProviderRef.current === providerType) {
           setStatus(nextStatus);
-        },
-        onProgress: (time, total) => {
+        }
+      },
+      onProgress: (time: number, total: number) => {
+        if (activeProviderRef.current === providerType) {
           setCurrentTime(time);
           if (total > 0) {
             setDuration(total);
           }
-        },
-        onError: (message) => {
+        }
+      },
+      onError: (message: string) => {
+        if (activeProviderRef.current === providerType) {
           setErrorMessage(message);
-        },
-        onTrackEnded: () => {
+        }
+      },
+      onTrackEnded: () => {
+        if (activeProviderRef.current === providerType) {
           nextTrack();
-        },
-      })
+        }
+      },
+    });
+
+    ytProvider
+      .mount(container, buildCallbacks('youtube'))
       .catch((err) => {
         setStatus('error');
         setErrorMessage(
@@ -240,18 +372,22 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         );
       });
 
+    void audioProvider.mount(container, buildCallbacks('audio'));
+
     return () => {
-      provider.destroy();
-      providerRef.current = null;
+      ytProvider.destroy();
+      audioProvider.destroy();
+      ytProviderRef.current = null;
+      audioProviderRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const playMood = useCallback(
     (moodId: MoodId, shuffle = false) => {
-      const filtered = getTracksByMood(moodId, languageFilter);
+      const filtered = getMoodTracks(moodId, languageFilter);
       const moodTracks =
-        filtered.length > 0 ? filtered : getTracksByMood(moodId, 'All');
+        filtered.length > 0 ? filtered : getMoodTracks(moodId, 'All');
       if (moodTracks.length === 0) return;
 
       let ordered = [...moodTracks];
@@ -261,46 +397,66 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setActiveMoodId(moodId);
       playTrack(ordered[0], ordered);
     },
-    [languageFilter, playTrack]
+    [getMoodTracks, languageFilter, playTrack]
   );
 
   const togglePlayPause = useCallback(() => {
     if (!currentTrack) {
-      const moodTracks = getTracksByMood(activeMoodId);
-      if (moodTracks.length > 0) {
-        playTrack(moodTracks[0], moodTracks);
+      const moodTracks = getMoodTracks(activeMoodId, languageFilter);
+      const fallbackTracks =
+        moodTracks.length > 0 ? moodTracks : getMoodTracks(activeMoodId, 'All');
+      if (fallbackTracks.length > 0) {
+        playTrack(fallbackTracks[0], fallbackTracks);
       }
       return;
     }
     if (status === 'playing' || status === 'loading') {
-      providerRef.current?.pause();
+      getActiveProvider()?.pause();
     } else {
-      providerRef.current?.play();
+      getActiveProvider()?.play();
     }
-  }, [activeMoodId, currentTrack, playTrack, status]);
+  }, [
+    activeMoodId,
+    currentTrack,
+    getActiveProvider,
+    getMoodTracks,
+    languageFilter,
+    playTrack,
+    status,
+  ]);
 
-  const seekTo = useCallback((seconds: number) => {
-    providerRef.current?.seekTo(seconds);
-    setCurrentTime(seconds);
-  }, []);
+  const seekTo = useCallback(
+    (seconds: number) => {
+      getActiveProvider()?.seekTo(seconds);
+      setCurrentTime(seconds);
+    },
+    [getActiveProvider]
+  );
 
-  const setVolume = useCallback((nextVolume: number) => {
-    const clamped = Math.max(0, Math.min(100, Math.round(nextVolume)));
-    setVolumeState(clamped);
-    providerRef.current?.setVolume(clamped);
-    if (clamped > 0 && isMuted) {
-      setIsMuted(false);
-      providerRef.current?.unMute();
-    }
-  }, [isMuted]);
+  const setVolume = useCallback(
+    (nextVolume: number) => {
+      const clamped = Math.max(0, Math.min(100, Math.round(nextVolume)));
+      setVolumeState(clamped);
+      ytProviderRef.current?.setVolume(clamped);
+      audioProviderRef.current?.setVolume(clamped);
+      if (clamped > 0 && isMuted) {
+        setIsMuted(false);
+        ytProviderRef.current?.unMute();
+        audioProviderRef.current?.unMute();
+      }
+    },
+    [isMuted]
+  );
 
   const toggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const next = !prev;
       if (next) {
-        providerRef.current?.mute();
+        ytProviderRef.current?.mute();
+        audioProviderRef.current?.mute();
       } else {
-        providerRef.current?.unMute();
+        ytProviderRef.current?.unMute();
+        audioProviderRef.current?.unMute();
       }
       return next;
     });
@@ -328,20 +484,31 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const recentTracks = useMemo(() => {
-    const map = new Map(TRACKS.map((t) => [t.id, t]));
+    const map = new Map(tracks.map((t) => [t.id, t]));
     return recentEntries
       .map((entry) => map.get(entry.trackId))
       .filter((t): t is Track => Boolean(t));
-  }, [recentEntries]);
+  }, [recentEntries, tracks]);
 
   const favouriteTracks = useMemo(() => {
-    const map = new Map(TRACKS.map((t) => [t.id, t]));
+    const map = new Map(tracks.map((t) => [t.id, t]));
     return favourites
       .map((id) => map.get(id))
       .filter((t): t is Track => Boolean(t));
-  }, [favourites]);
+  }, [favourites, tracks]);
+
+  const activeProviderName =
+    currentTrack?.provider === 'audio'
+      ? audioProviderRef.current?.displayName ?? 'Authorized Audio Stream'
+      : ytProviderRef.current?.displayName ?? 'YouTube Official Player';
 
   const value: PlayerContextValue = {
+    tracks,
+    moods,
+    languages: availableLanguages,
+    hasCloudCatalog,
+    getMood,
+    getMoodTracks,
     currentTrack,
     queue,
     status,
@@ -373,8 +540,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     clearRecentHistory,
     clearError,
     providerContainerRef,
-    activeProviderName:
-      providerRef.current?.displayName ?? 'YouTube Official Player',
+    activeProviderName,
   };
 
   return (
@@ -390,7 +556,7 @@ export function usePlayer(): PlayerContextValue {
   return ctx;
 }
 
-export function getRandomMoodId(): MoodId {
-  const index = Math.floor(Math.random() * MOOD_CATEGORIES.length);
-  return MOOD_CATEGORIES[index].id;
+export function getRandomMoodId(moods: MoodCategory[] = STATIC_MOODS): MoodId {
+  const index = Math.floor(Math.random() * moods.length);
+  return moods[index]?.id ?? 'chill';
 }

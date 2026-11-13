@@ -15,13 +15,21 @@ export type SectionView =
   | 'explore'
   | 'search'
   | 'recent'
-  | 'favourites';
+  | 'favourites'
+  | 'admin';
 
-export type ProviderType = 'youtube';
+export type ProviderType = 'youtube' | 'audio';
 
-export type TrackLanguage = 'Hindi' | 'Marathi' | 'English' | 'Instrumental';
+export type TrackLanguage = string;
 
 export type LanguageFilter = 'All' | TrackLanguage;
+
+export const DEFAULT_LANGUAGES: TrackLanguage[] = [
+  'Hindi',
+  'Marathi',
+  'English',
+  'Instrumental',
+];
 
 export interface MoodCategory {
   id: MoodId;
@@ -33,16 +41,26 @@ export interface MoodCategory {
   accentTo: string;
   glowColor: string;
   coverImage: string;
+  sortOrder?: number;
+}
+
+export interface LanguageOption {
+  id: string;
+  name: string;
+  sortOrder: number;
 }
 
 export interface Track {
   id: string;
   title: string;
   artist: string;
+  album?: string;
+  description?: string;
   language: TrackLanguage;
   moodId: MoodId;
   provider: ProviderType;
   providerTrackId: string;
+  audioUrl?: string;
   durationLabel: string;
   durationSeconds: number;
   isLive?: boolean;
@@ -50,6 +68,7 @@ export interface Track {
   fallbackArtwork: string;
   year?: string;
   keywords: string[];
+  createdBy?: string;
 }
 
 export type PlaybackStatus =

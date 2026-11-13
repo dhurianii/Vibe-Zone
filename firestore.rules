@@ -1,0 +1,162 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerified() && request.auth.token.email == 'dhurianiket94@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidMood(data, moodId) {
+      return data.keys().hasAll([
+          'id', 'name', 'emoji', 'description', 'curatorNote',
+          'accentFrom', 'accentTo', 'glowColor', 'coverImage', 'sortOrder', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'name', 'emoji', 'description', 'curatorNote',
+          'accentFrom', 'accentTo', 'glowColor', 'coverImage', 'sortOrder', 'updatedAt'
+        ])
+        && data.id is string && data.id == moodId && data.id.size() >= 1 && data.id.size() <= 40
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 60
+        && data.emoji is string && data.emoji.size() >= 1 && data.emoji.size() <= 16
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 300
+        && data.curatorNote is string && data.curatorNote.size() >= 1 && data.curatorNote.size() <= 300
+        && data.accentFrom is string && data.accentFrom.size() >= 4 && data.accentFrom.size() <= 20
+        && data.accentTo is string && data.accentTo.size() >= 4 && data.accentTo.size() <= 20
+        && data.glowColor is string && data.glowColor.size() >= 4 && data.glowColor.size() <= 60
+        && data.coverImage is string && data.coverImage.size() >= 1 && data.coverImage.size() <= 1024
+        && data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000
+        && data.updatedAt == request.time;
+    }
+
+    function isValidLanguage(data, langId) {
+      return data.keys().hasAll(['id', 'name', 'sortOrder', 'updatedAt'])
+        && data.keys().hasOnly(['id', 'name', 'sortOrder', 'updatedAt'])
+        && data.id is string && data.id == langId && data.id.size() >= 1 && data.id.size() <= 40
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 40
+        && data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000
+        && data.updatedAt == request.time;
+    }
+
+    function isValidSong(data, songId) {
+      return data.keys().hasAll([
+          'id', 'title', 'artist', 'language', 'moodId', 'provider',
+          'providerTrackId', 'artworkUrl', 'durationLabel', 'durationSeconds',
+          'isLive', 'keywords', 'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'id', 'title', 'artist', 'album', 'description', 'language', 'moodId',
+          'provider', 'providerTrackId', 'audioUrl', 'artworkUrl', 'durationLabel',
+          'durationSeconds', 'isLive', 'keywords', 'createdBy', 'createdAt', 'updatedAt'
+        ])
+        && data.id is string && data.id == songId && data.id.size() >= 1 && data.id.size() <= 128
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 160
+        && data.artist is string && data.artist.size() >= 1 && data.artist.size() <= 160
+        && (!('album' in data) || (data.album is string && data.album.size() <= 160))
+        && (!('description' in data) || (data.description is string && data.description.size() <= 600))
+        && data.language is string && data.language.size() >= 1 && data.language.size() <= 40
+        && data.moodId is string && data.moodId.size() >= 1 && data.moodId.size() <= 40
+        && data.provider in ['youtube', 'audio']
+        && data.providerTrackId is string && data.providerTrackId.size() >= 1 && data.providerTrackId.size() <= 512
+        && (!('audioUrl' in data) || (data.audioUrl is string && data.audioUrl.size() <= 1024))
+        && data.artworkUrl is string && data.artworkUrl.size() <= 1024
+        && data.durationLabel is string && data.durationLabel.size() >= 1 && data.durationLabel.size() <= 20
+        && data.durationSeconds is int && data.durationSeconds >= 0 && data.durationSeconds <= 86400
+        && data.isLive is bool
+        && data.keywords is list && data.keywords.size() <= 20
+        && (data.keywords.size() == 0 || data.keywords[0] is string)
+        && data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128;
+    }
+
+    function isValidAdminUser(data, uid) {
+      return data.keys().hasAll(['uid', 'email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['uid', 'email', 'role', 'createdAt'])
+        && data.uid is string && data.uid == uid && data.uid.size() >= 1 && data.uid.size() <= 128
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 160
+        && data.role == 'admin'
+        && data.createdAt == request.time;
+    }
+
+    // Connection health check doc
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Public mood catalog
+    match /moods/{moodId} {
+      allow get: if isValidId(moodId);
+      allow list: if true;
+      allow create, update: if isAdmin() && isValidId(moodId) && isValidMood(incoming(), moodId);
+      allow delete: if isAdmin() && isValidId(moodId);
+    }
+
+    // Public language catalog
+    match /languages/{languageId} {
+      allow get: if isValidId(languageId);
+      allow list: if true;
+      allow create, update: if isAdmin() && isValidId(languageId) && isValidLanguage(incoming(), languageId);
+      allow delete: if isAdmin() && isValidId(languageId);
+    }
+
+    // Public song catalog (admin-managed writes)
+    match /songs/{songId} {
+      allow get: if isValidId(songId);
+      allow list: if true;
+      allow create: if isAdmin()
+        && isValidId(songId)
+        && isValidSong(incoming(), songId)
+        && incoming().createdBy == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isAdmin()
+        && isValidId(songId)
+        && isValidSong(incoming(), songId)
+        && incoming().createdBy == existing().createdBy
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'artist', 'album', 'description', 'language', 'moodId',
+          'provider', 'providerTrackId', 'audioUrl', 'artworkUrl',
+          'durationLabel', 'durationSeconds', 'isLive', 'keywords', 'updatedAt'
+        ]);
+      allow delete: if isAdmin() && isValidId(songId);
+    }
+
+    // Admin allowlist (PII isolated)
+    match /admins/{uid} {
+      allow get: if isVerified() && (request.auth.uid == uid || isBootstrappedAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow create: if isBootstrappedAdmin() && isValidId(uid) && isValidAdminUser(incoming(), uid);
+      allow update, delete: if isBootstrappedAdmin() && isValidId(uid);
+    }
+  }
+}

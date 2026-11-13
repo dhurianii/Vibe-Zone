@@ -1,8 +1,9 @@
 import { AnimatePresence, motion } from 'motion/react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PlayerBar } from './components/PlayerBar';
 import { PlayerStage } from './components/PlayerStage';
 import { TopNav } from './components/TopNav';
+import { AdminView } from './components/admin/AdminView';
 import { ExploreView } from './components/views/ExploreView';
 import { HomeView } from './components/views/HomeView';
 import { LibraryView } from './components/views/LibraryView';
@@ -12,27 +13,57 @@ import {
   getRandomMoodId,
   usePlayer,
 } from './context/PlayerContext';
-import { getMoodById } from './data/moodsAndTracks';
 import { SectionView } from './types/music';
 
+function getInitialSection(): SectionView {
+  if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+    return 'admin';
+  }
+  return 'home';
+}
+
 function SonaShell() {
-  const [activeSection, setActiveSection] = useState<SectionView>('home');
+  const [activeSection, setActiveSection] = useState<SectionView>(getInitialSection);
   const {
+    moods,
+    getMood,
     activeMoodId,
     currentTrack,
     favourites,
     playMood,
   } = usePlayer();
 
-  const activeMood = getMoodById(activeMoodId);
+  const activeMood = getMood(activeMoodId);
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (window.location.pathname === '/admin') {
+        setActiveSection('admin');
+      } else {
+        setActiveSection((prev) => (prev === 'admin' ? 'home' : prev));
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, []);
 
   const handleNavigate = (section: SectionView) => {
     setActiveSection(section);
+    if (section === 'admin') {
+      if (window.location.pathname !== '/admin') {
+        window.history.pushState({}, '', '/admin');
+      }
+    } else if (window.location.pathname === '/admin') {
+      window.history.pushState({}, '', '/');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSurpriseVibe = () => {
-    const randomMood = getRandomMoodId();
+    if (activeSection === 'admin') {
+      handleNavigate('home');
+    }
+    const randomMood = getRandomMoodId(moods);
     playMood(randomMood, true);
   };
 
@@ -74,11 +105,14 @@ function SonaShell() {
             {activeSection === 'favourites' && (
               <LibraryView mode="favourites" onNavigate={handleNavigate} />
             )}
+            {activeSection === 'admin' && (
+              <AdminView onExitAdmin={() => handleNavigate('home')} />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
 
-      {/* Persistent Official YouTube Player Stage */}
+      {/* Persistent Official Playback Stage */}
       <PlayerStage />
 
       {/* Quiet Editorial Footer */}
@@ -95,9 +129,19 @@ function SonaShell() {
             <span aria-hidden="true">·</span>
             <span>Don&apos;t search for music. Find your vibe.</span>
           </div>
-          <p>
-            Streaming via Official YouTube IFrame Player API · No account required
-          </p>
+          <div className="flex items-center gap-3">
+            <p>
+              Streaming via Official YouTube IFrame Player API · No account required
+            </p>
+            <span aria-hidden="true">·</span>
+            <button
+              type="button"
+              onClick={() => handleNavigate('admin')}
+              className="text-slate-400 hover:text-indigo-300 transition-colors underline underline-offset-2"
+            >
+              Admin
+            </button>
+          </div>
         </div>
       </footer>
 

@@ -1,6 +1,6 @@
 import { Search, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { MOOD_CATEGORIES, TRACKS } from '../../data/moodsAndTracks';
+import { usePlayer } from '../../context/PlayerContext';
 import { LanguageFilter } from '../../types/music';
 import { LanguageTabs } from '../LanguageTabs';
 import { TrackList } from '../TrackList';
@@ -17,6 +17,7 @@ const QUICK_PROMPTS = [
 ];
 
 export function SearchView() {
+  const { tracks, moods } = usePlayer();
   const [query, setQuery] = useState('');
   const [language, setLanguage] = useState<LanguageFilter>('All');
 
@@ -24,10 +25,10 @@ export function SearchView() {
     const trimmed = query.trim().toLowerCase();
 
     const moodNameMap = new Map(
-      MOOD_CATEGORIES.map((m) => [m.id, m.name.toLowerCase()])
+      moods.map((m) => [m.id, m.name.toLowerCase()])
     );
 
-    return TRACKS.filter((track) => {
+    return tracks.filter((track) => {
       if (language !== 'All' && track.language !== language) {
         return false;
       }
@@ -38,12 +39,13 @@ export function SearchView() {
       return (
         track.title.toLowerCase().includes(trimmed) ||
         track.artist.toLowerCase().includes(trimmed) ||
+        (track.album ?? '').toLowerCase().includes(trimmed) ||
         track.language.toLowerCase().includes(trimmed) ||
         moodName.includes(trimmed) ||
         track.keywords.some((kw) => kw.toLowerCase().includes(trimmed))
       );
     });
-  }, [language, query]);
+  }, [language, moods, query, tracks]);
 
   return (
     <div className="space-y-6 sm:space-y-8">

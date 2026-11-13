@@ -1,6 +1,5 @@
 import { Heart, Pause, Play } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
-import { getMoodById } from '../data/moodsAndTracks';
 import { Track } from '../types/music';
 import { ArtworkImage } from './ArtworkImage';
 
@@ -20,6 +19,7 @@ export function TrackList({
   const {
     currentTrack,
     status,
+    getMood,
     playTrack,
     togglePlayPause,
     toggleFavourite,
@@ -45,7 +45,7 @@ export function TrackList({
         const isCurrent = currentTrack?.id === track.id;
         const isPlaying = isCurrent && (status === 'playing' || status === 'loading');
         const fav = isFavourite(track.id);
-        const mood = getMoodById(track.moodId);
+        const mood = getMood(track.moodId);
 
         return (
           <div

@@ -1,12 +1,7 @@
 import { ArrowRight, Play, Shuffle } from 'lucide-react';
 import { useRef } from 'react';
 import { usePlayer } from '../../context/PlayerContext';
-import {
-  HERO_BANNER_IMAGE,
-  MOOD_CATEGORIES,
-  getMoodById,
-  getTracksByMood,
-} from '../../data/moodsAndTracks';
+import { HERO_BANNER_IMAGE } from '../../data/moodsAndTracks';
 import { MoodId, SectionView } from '../../types/music';
 import { ArtworkImage } from '../ArtworkImage';
 import { LanguageTabs } from '../LanguageTabs';
@@ -19,6 +14,9 @@ interface HomeViewProps {
 
 export function HomeView({ onNavigate }: HomeViewProps) {
   const {
+    moods,
+    getMood,
+    getMoodTracks,
     activeMoodId,
     setActiveMoodId,
     languageFilter,
@@ -30,8 +28,8 @@ export function HomeView({ onNavigate }: HomeViewProps) {
 
   const trackSectionRef = useRef<HTMLElement | null>(null);
 
-  const selectedMood = getMoodById(activeMoodId);
-  const selectedTracks = getTracksByMood(activeMoodId, languageFilter);
+  const selectedMood = getMood(activeMoodId);
+  const selectedTracks = getMoodTracks(activeMoodId, languageFilter);
 
   const handleSelectMood = (moodId: MoodId) => {
     setActiveMoodId(moodId);
@@ -136,8 +134,8 @@ export function HomeView({ onNavigate }: HomeViewProps) {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4">
-          {MOOD_CATEGORIES.map((mood) => {
-            const count = getTracksByMood(mood.id, languageFilter).length;
+          {moods.map((mood) => {
+            const count = getMoodTracks(mood.id, languageFilter).length;
             const isPlayingThisMood =
               currentTrack?.moodId === mood.id &&
               (status === 'playing' || status === 'loading');

@@ -13,7 +13,6 @@ import {
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { usePlayer } from '../context/PlayerContext';
-import { getMoodById } from '../data/moodsAndTracks';
 import { formatTime } from '../utils/formatTime';
 import { ArtworkImage } from './ArtworkImage';
 
@@ -44,6 +43,7 @@ export function PlayerStage() {
     isFavourite,
     providerContainerRef,
     activeProviderName,
+    getMood,
   } = usePlayer();
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export function PlayerStage() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isTheaterOpen, setTheaterOpen]);
 
-  const activeMood = currentTrack ? getMoodById(currentTrack.moodId) : null;
+  const activeMood = currentTrack ? getMood(currentTrack.moodId) : null;
   const effectiveDuration =
     duration > 0 ? duration : currentTrack?.durationSeconds ?? 0;
   const progressPercent =
@@ -98,7 +98,7 @@ export function PlayerStage() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {currentTrack && (
+            {currentTrack && currentTrack.provider === 'youtube' && (
               <a
                 href={`https://www.youtube.com/watch?v=${currentTrack.providerTrackId}`}
                 target="_blank"
@@ -164,11 +164,31 @@ export function PlayerStage() {
               {!currentTrack && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#090B12]/90 px-4 text-center pointer-events-none">
                   <p className="font-display text-sm font-semibold text-slate-200">
-                    Official YouTube Stage Ready
+                    Official Playback Stage Ready
                   </p>
                   <p className="mt-1 text-xs text-slate-400">
                     Pick any mood card or track to start playback.
                   </p>
+                </div>
+              )}
+
+              {currentTrack && currentTrack.provider === 'audio' && (
+                <div className="absolute inset-0 bg-[#090B12] flex items-center justify-center">
+                  <ArtworkImage
+                    src={currentTrack.artworkUrl}
+                    fallbackSrc={currentTrack.fallbackArtwork}
+                    alt={currentTrack.title}
+                    className="w-full h-full object-cover opacity-85"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <p className="text-xs font-medium text-indigo-300">
+                      Authorized Audio Stream
+                    </p>
+                    <p className="text-sm font-semibold text-white truncate">
+                      {currentTrack.title}
+                    </p>
+                  </div>
                 </div>
               )}
             </div>

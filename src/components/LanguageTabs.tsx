@@ -1,3 +1,4 @@
+import { usePlayer } from '../context/PlayerContext';
 import { LanguageFilter } from '../types/music';
 
 interface LanguageTabsProps {
@@ -5,22 +6,20 @@ interface LanguageTabsProps {
   onChange: (lang: LanguageFilter) => void;
 }
 
-const LANGUAGES: { id: LanguageFilter; label: string }[] = [
-  { id: 'All', label: 'All Languages' },
-  { id: 'Hindi', label: 'Hindi' },
-  { id: 'Marathi', label: 'Marathi' },
-  { id: 'English', label: 'English' },
-  { id: 'Instrumental', label: 'Instrumental' },
-];
-
 export function LanguageTabs({ value, onChange }: LanguageTabsProps) {
+  const { languages } = usePlayer();
+  const options: { id: LanguageFilter; label: string }[] = [
+    { id: 'All', label: 'All Languages' },
+    ...languages.map((lang) => ({ id: lang, label: lang })),
+  ];
+
   return (
     <div
       role="group"
       aria-label="Filter by language"
       className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl border border-white/[0.08] bg-[#0D1018]"
     >
-      {LANGUAGES.map((lang) => {
+      {options.map((lang) => {
         const active = value === lang.id;
         return (
           <button

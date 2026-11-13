@@ -1,0 +1,250 @@
+{
+  "entities": {
+    "MoodCategory": {
+      "title": "MoodCategory",
+      "description": "Curated mood channel metadata for mood-based music discovery.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "emoji": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "curatorNote": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "accentFrom": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 20
+        },
+        "accentTo": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 20
+        },
+        "glowColor": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 60
+        },
+        "coverImage": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "sortOrder": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "emoji",
+        "description",
+        "curatorNote",
+        "accentFrom",
+        "accentTo",
+        "glowColor",
+        "coverImage",
+        "sortOrder",
+        "updatedAt"
+      ]
+    },
+    "LanguageOption": {
+      "title": "LanguageOption",
+      "description": "Supported music language category.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "sortOrder": {
+          "type": "integer"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "name", "sortOrder", "updatedAt"]
+    },
+    "Song": {
+      "title": "Song",
+      "description": "Playable song entry linked to a mood, language, and legal music provider.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "artist": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "album": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 600
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "moodId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "provider": {
+          "type": "string",
+          "enum": ["youtube", "audio"]
+        },
+        "providerTrackId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512
+        },
+        "audioUrl": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "artworkUrl": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "durationLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 20
+        },
+        "durationSeconds": {
+          "type": "integer"
+        },
+        "isLive": {
+          "type": "boolean"
+        },
+        "keywords": {
+          "type": "array"
+        },
+        "createdBy": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "artist",
+        "language",
+        "moodId",
+        "provider",
+        "providerTrackId",
+        "artworkUrl",
+        "durationLabel",
+        "durationSeconds",
+        "isLive",
+        "keywords",
+        "createdBy",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized administrator identity record.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/moods/{moodId}": {
+      "schema": { "$ref": "#/entities/MoodCategory" },
+      "description": "Publicly readable mood categories, writable only by verified admins."
+    },
+    "/languages/{languageId}": {
+      "schema": { "$ref": "#/entities/LanguageOption" },
+      "description": "Publicly readable language catalog, writable only by verified admins."
+    },
+    "/songs/{songId}": {
+      "schema": { "$ref": "#/entities/Song" },
+      "description": "Publicly readable song catalog, created/edited/deleted only by verified admins."
+    },
+    "/admins/{uid}": {
+      "schema": { "$ref": "#/entities/AdminUser" },
+      "description": "Restricted admin allowlist records."
+    }
+  }
+}

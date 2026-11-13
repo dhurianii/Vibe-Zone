@@ -1,0 +1,6 @@
+{
+  "name": "Sona",
+  "description": "Don't search for music. Find your vibe. A mood-based music discovery app powered by official YouTube playback.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

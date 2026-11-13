@@ -40,7 +40,7 @@ export function TopNav({
             onClick={() => onNavigate('home')}
             className="font-display text-xl font-bold tracking-tight text-white whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md px-1"
           >
-            Sona
+            Vibe Zone
           </button>
 
           {/* Zone 2: Single-line text navigation links */}

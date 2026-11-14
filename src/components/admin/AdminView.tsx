@@ -125,11 +125,27 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     try {
       await signInWithPopup(auth, googleAuthProvider);
     } catch (err) {
-      setAuthError(
-        err instanceof Error
-          ? err.message
-          : 'Google sign-in was cancelled or blocked.'
-      );
+      const code =
+        typeof err === 'object' && err !== null && 'code' in err
+          ? String((err as { code?: unknown }).code ?? '')
+          : '';
+      if (code === 'auth/unauthorized-domain') {
+        const host =
+          typeof window !== 'undefined' ? window.location.hostname : 'this domain';
+        setAuthError(
+          `Sign-in is blocked because "${host}" is not listed in Firebase Authentication -> Settings -> Authorized domains for this project.`
+        );
+      } else if (code === 'auth/popup-blocked') {
+        setAuthError(
+          'Your browser blocked the Google sign-in popup. Allow popups for this site and try again.'
+        );
+      } else {
+        setAuthError(
+          err instanceof Error
+            ? err.message
+            : 'Google sign-in was cancelled or blocked.'
+        );
+      }
     } finally {
       setIsSigningIn(false);
     }
@@ -225,14 +241,14 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               Admin Sign In
             </h1>
             <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-              Sign in with an authorized administrator Google account to manage Sona&apos;s songs, moods, languages, and uploaded media.
+              Sign in with an authorized administrator Google account to manage Vibe Zone&apos;s songs, moods, languages, and uploaded media.
             </p>
           </div>
 
           {authError && (
             <div
               role="alert"
-              className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200"
+              className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-xs text-rose-200 leading-relaxed"
             >
               {authError}
             </div>
@@ -255,7 +271,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               className="w-full h-11 rounded-xl text-sm font-medium text-slate-300 hover:text-white border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] flex items-center justify-center gap-2 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Return to Sona</span>
+              <span>Return to Vibe Zone</span>
             </button>
           </div>
         </div>

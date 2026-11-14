@@ -31,9 +31,7 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isBootstrappedAdmin() || (
-        isVerified() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
-      );
+      return isBootstrappedAdmin();
     }
 
     function isValidMood(data, moodId) {
@@ -151,12 +149,11 @@ service cloud.firestore {
       allow delete: if isAdmin() && isValidId(songId);
     }
 
-    // Admin allowlist (PII isolated)
+    // Admin allowlist (public registration and self-promotion disabled)
     match /admins/{uid} {
-      allow get: if isVerified() && (request.auth.uid == uid || isBootstrappedAdmin());
-      allow list: if isBootstrappedAdmin();
-      allow create: if isBootstrappedAdmin() && isValidId(uid) && isValidAdminUser(incoming(), uid);
-      allow update, delete: if isBootstrappedAdmin() && isValidId(uid);
+      allow get: if isBootstrappedAdmin() && isValidId(uid);
+      allow list: if false;
+      allow create, update, delete: if false;
     }
   }
 }

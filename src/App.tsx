@@ -14,9 +14,13 @@ import {
   usePlayer,
 } from './context/PlayerContext';
 import { SectionView } from './types/music';
+import { isProtectedAdminPath } from './utils/adminRouting';
 
 function getInitialSection(): SectionView {
-  if (typeof window !== 'undefined' && window.location.pathname === '/admin') {
+  if (
+    typeof window !== 'undefined' &&
+    isProtectedAdminPath(window.location.pathname)
+  ) {
     return 'admin';
   }
   return 'home';
@@ -37,7 +41,7 @@ function SonaShell() {
 
   useEffect(() => {
     const onPopState = () => {
-      if (window.location.pathname === '/admin') {
+      if (isProtectedAdminPath(window.location.pathname)) {
         setActiveSection('admin');
       } else {
         setActiveSection((prev) => (prev === 'admin' ? 'home' : prev));
@@ -50,10 +54,10 @@ function SonaShell() {
   const handleNavigate = (section: SectionView) => {
     setActiveSection(section);
     if (section === 'admin') {
-      if (window.location.pathname !== '/admin') {
+      if (!isProtectedAdminPath(window.location.pathname)) {
         window.history.pushState({}, '', '/admin');
       }
-    } else if (window.location.pathname === '/admin') {
+    } else if (isProtectedAdminPath(window.location.pathname)) {
       window.history.pushState({}, '', '/');
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });

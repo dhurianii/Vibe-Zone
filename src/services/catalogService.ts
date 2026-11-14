@@ -1,25 +1,16 @@
 import {
   collection,
-  deleteDoc,
-  doc,
-  getDoc,
   getDocs,
   onSnapshot,
   orderBy,
   query,
-  serverTimestamp,
-  setDoc,
-  updateDoc,
-  writeBatch,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { MOOD_CATEGORIES, TRACKS } from '../data/moodsAndTracks';
 import {
   OperationType,
   auth,
   db,
   handleFirestoreError,
-  storage,
 } from '../lib/firebase';
 import {
   DEFAULT_LANGUAGES,
@@ -30,7 +21,42 @@ import {
   Track,
 } from '../types/music';
 
-export const BOOTSTRAPPED_ADMIN_EMAIL = 'dhurianiket94@gmail.com';
+async function getAdminAuthHeaders(): Promise<Record<string, string>> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Authentication required. Please sign in with the authorized Google account.');
+  }
+  const idToken = await user.getIdToken();
+  return {
+    Authorization: `Bearer ${idToken}`,
+  };
+}
+
+async function adminApiRequest<T>(
+  path: string,
+  init: RequestInit = {}
+): Promise<T> {
+  const authHeaders = await getAdminAuthHeaders();
+  const res = await fetch(path, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...authHeaders,
+      ...(init.headers ?? {}),
+    },
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    error?: string;
+  } & T;
+
+  if (!res.ok) {
+    throw new Error(
+      payload.error || `Admin request failed (${res.status}).`
+    );
+  }
+  return payload;
+}
 
 export interface SongInput {
   title: string;
@@ -93,16 +119,53 @@ export function parseDurationToSeconds(label: string): number {
   return 0;
 }
 
-export async function verifyAdminAccess(uid: string, email: string | null, emailVerified: boolean): Promise<boolean> {
-  if (!emailVerified) return false;
-  if (email && email.toLowerCase() === BOOTSTRAPPED_ADMIN_EMAIL.toLowerCase()) {
-    return true;
+export interface AdminVerificationResult {
+  authorized: boolean;
+  email?: string;
+  error?: string;
+}
+
+export async function verifyAdminAccess(): Promise<AdminVerificationResult> {
+  const user = auth.currentUser;
+  if (!user) {
+    return { authorized: false, error: 'Authentication required.' };
   }
+
   try {
-    const adminSnap = await getDoc(doc(db, 'admins', uid));
-    return adminSnap.exists();
-  } catch {
-    return false;
+    const headers = await getAdminAuthHeaders();
+    const res = await fetch('/api/admin/session', {
+      method: 'GET',
+      headers,
+    });
+    const data = (await res.json().catch(() => ({}))) as {
+      authorized?: boolean;
+      email?: string;
+      error?: string;
+    };
+
+    if (!res.ok || !data.authorized) {
+      return {
+        authorized: false,
+        email: user.email ?? undefined,
+        error:
+          data.error ||
+          'Access Denied: This Google account is not authorized for Admin Panel access.',
+      };
+    }
+
+    return {
+      authorized: true,
+      email: data.email ?? user.email ?? undefined,
+    };
+  } catch (err) {
+    return {
+      authorized: false,
+      email: user.email ?? undefined,
+      error:
+        err instanceof Error
+          ? err.message
+          : 'Unable to verify administrator session with the server.',
+    };
   }
 }
 
@@ -288,21 +351,14 @@ export async function seedStarterCatalogIfEmpty(): Promise<{
   seededMoods: number;
   seededLanguages: number;
 }> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('Admin authentication required to sync catalog.');
-  }
+  const [moodsSnap, langsSnap, songsSnap] = await Promise.all([
+    getDocs(collection(db, 'moods')),
+    getDocs(collection(db, 'languages')),
+    getDocs(collection(db, 'songs')),
+  ]);
 
-  let seededMoods = 0;
-  let seededLanguages = 0;
-  let seededSongs = 0;
-
-  // 1. Seed Moods if empty
-  const moodsSnap = await getDocs(collection(db, 'moods'));
-  if (moodsSnap.empty) {
-    const batch = writeBatch(db);
-    MOOD_CATEGORIES.forEach((mood, index) => {
-      batch.set(doc(db, 'moods', mood.id), {
+  const moodsPayload = moodsSnap.empty
+    ? MOOD_CATEGORIES.map((mood, index) => ({
         id: mood.id,
         name: mood.name,
         emoji: mood.emoji,
@@ -313,101 +369,88 @@ export async function seedStarterCatalogIfEmpty(): Promise<{
         glowColor: mood.glowColor,
         coverImage: mood.coverImage,
         sortOrder: index,
-        updatedAt: serverTimestamp(),
-      });
-    });
-    await batch.commit();
-    seededMoods = MOOD_CATEGORIES.length;
-  }
+      }))
+    : [];
 
-  // 2. Seed Languages if empty
-  const langsSnap = await getDocs(collection(db, 'languages'));
-  if (langsSnap.empty) {
-    const batch = writeBatch(db);
-    const defaultLangObjects: LanguageOption[] = DEFAULT_LANGUAGES.map(
-      (name, index) => ({
+  const defaultLangObjects: LanguageOption[] = langsSnap.empty
+    ? DEFAULT_LANGUAGES.map((name, index) => ({
         id: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         name,
         sortOrder: index,
-      })
-    );
-    defaultLangObjects.forEach((lang) => {
-      batch.set(doc(db, 'languages', lang.id), {
-        id: lang.id,
-        name: lang.name,
-        sortOrder: lang.sortOrder,
-        updatedAt: serverTimestamp(),
-      });
-    });
-    await batch.commit();
-    seededLanguages = defaultLangObjects.length;
-  }
+      }))
+    : [];
 
-  // 3. Seed Starter Songs if empty
-  const songsSnap = await getDocs(collection(db, 'songs'));
-  if (songsSnap.empty) {
-    const batch = writeBatch(db);
-    TRACKS.forEach((track) => {
-      const safeId = track.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const docPayload: Record<string, unknown> = {
-        id: safeId,
+  const songsPayload = songsSnap.empty
+    ? TRACKS.map((track) => ({
+        id: track.id.replace(/[^a-zA-Z0-9_-]/g, '_'),
         title: track.title.slice(0, 160),
         artist: track.artist.slice(0, 160),
+        ...(track.album ? { album: track.album.slice(0, 160) } : {}),
+        ...(track.description
+          ? { description: track.description.slice(0, 600) }
+          : {}),
         language: track.language.slice(0, 40),
         moodId: track.moodId,
         provider: track.provider,
         providerTrackId: track.providerTrackId.slice(0, 512),
         artworkUrl: track.artworkUrl.slice(0, 1024),
         durationLabel: track.durationLabel.slice(0, 20),
-        durationSeconds: Math.min(86400, Math.max(0, Math.round(track.durationSeconds))),
+        durationSeconds: Math.min(
+          86400,
+          Math.max(0, Math.round(track.durationSeconds))
+        ),
         isLive: Boolean(track.isLive),
         keywords: track.keywords.slice(0, 20),
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      };
-      if (track.album) {
-        docPayload.album = track.album.slice(0, 160);
-      }
-      if (track.description) {
-        docPayload.description = track.description.slice(0, 600);
-      }
-      batch.set(doc(db, 'songs', safeId), docPayload);
-    });
-    await batch.commit();
-    seededSongs = TRACKS.length;
+      }))
+    : [];
+
+  if (
+    moodsPayload.length === 0 &&
+    defaultLangObjects.length === 0 &&
+    songsPayload.length === 0
+  ) {
+    return { seededSongs: 0, seededMoods: 0, seededLanguages: 0 };
   }
 
-  return { seededSongs, seededMoods, seededLanguages };
+  await adminApiRequest<{ committed: number }>('/api/admin/catalog/sync', {
+    method: 'POST',
+    body: JSON.stringify({
+      moods: moodsPayload,
+      languages: defaultLangObjects,
+      songs: songsPayload,
+    }),
+  });
+
+  return {
+    seededSongs: songsPayload.length,
+    seededMoods: moodsPayload.length,
+    seededLanguages: defaultLangObjects.length,
+  };
 }
 
 /**
- * Migrates an existing pre-merge Firestore catalog so:
- * 1. `motivation` mood is merged into `WORKOUT 🔥` and deleted.
- * 2. Any existing songs under `motivation` are moved to `workout` without duplicating.
- * 3. Any missing songs from the 36+ curated Workout list are added to Firestore.
+ * Migrates an existing pre-merge Firestore catalog via server-verified admin API.
  */
 export async function syncWorkoutCatalogUpgrade(): Promise<{
   migratedSongs: number;
   addedSongs: number;
   mergedMood: boolean;
 }> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('Admin authentication required to migrate Workout catalog.');
-  }
-
   let migratedSongs = 0;
   let addedSongs = 0;
   let mergedMood = false;
 
-  const batch = writeBatch(db);
   const workoutMood = MOOD_CATEGORIES.find((m) => m.id === 'workout')!;
+  const [moodsSnap, songsSnap] = await Promise.all([
+    getDocs(collection(db, 'moods')),
+    getDocs(collection(db, 'songs')),
+  ]);
 
-  // 1. Update moods/workout and delete moods/motivation if present
-  const moodsSnap = await getDocs(collection(db, 'moods'));
   const motivationMoodDoc = moodsSnap.docs.find((d) => d.id === 'motivation');
   const workoutMoodDoc = moodsSnap.docs.find((d) => d.id === 'workout');
+
+  const moodsToUpsert: Array<Record<string, unknown>> = [];
+  const deleteMoodIds: string[] = [];
 
   if (
     motivationMoodDoc ||
@@ -415,7 +458,7 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
     workoutMoodDoc.data().name !== 'WORKOUT' ||
     workoutMoodDoc.data().emoji !== '🔥'
   ) {
-    batch.set(doc(db, 'moods', 'workout'), {
+    moodsToUpsert.push({
       id: workoutMood.id,
       name: workoutMood.name,
       emoji: workoutMood.emoji,
@@ -426,18 +469,17 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
       glowColor: workoutMood.glowColor,
       coverImage: workoutMood.coverImage,
       sortOrder: 0,
-      updatedAt: serverTimestamp(),
     });
     if (motivationMoodDoc) {
-      batch.delete(doc(db, 'moods', 'motivation'));
+      deleteMoodIds.push('motivation');
     }
     mergedMood = true;
   }
 
-  // 2. Migrate existing motivation songs -> workout & fix legacy Zinda duplicate
-  const songsSnap = await getDocs(collection(db, 'songs'));
   const existingIds = new Set<string>();
   const existingNormalizedKeys = new Set<string>();
+  const deleteSongIds: string[] = [];
+  const songsToSync: Array<Record<string, unknown>> = [];
 
   const normalizeKey = (title: string) =>
     title
@@ -454,35 +496,56 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
     }
 
     if (d.id === 'mt-hi-2') {
-      // Remove duplicate Zinda from motivation
-      batch.delete(doc(db, 'songs', d.id));
+      deleteSongIds.push(d.id);
       migratedSongs += 1;
       return;
     }
 
     if (d.id === 'wk-hi-1' && data.providerTrackId === 'uQF7_gAW4W0') {
-      batch.update(doc(db, 'songs', d.id), {
+      songsToSync.push({
+        mode: 'update',
+        id: d.id,
         title: 'Zinda',
+        artist: String(data.artist ?? 'Siddharth Mahadevan · Shankar-Ehsaan-Loy'),
         album: 'Bhaag Milkha Bhaag',
+        language: String(data.language ?? 'Hindi'),
+        moodId: 'workout',
+        provider: 'youtube',
         providerTrackId: 'gdqFLjWU8x8',
         artworkUrl: 'https://i.ytimg.com/vi/gdqFLjWU8x8/hqdefault.jpg',
-        moodId: 'workout',
-        updatedAt: serverTimestamp(),
+        durationLabel: String(data.durationLabel ?? '3:30'),
+        durationSeconds: Number(data.durationSeconds ?? 210),
+        isLive: Boolean(data.isLive),
+        keywords: Array.isArray(data.keywords) ? data.keywords.map(String) : [],
       });
       migratedSongs += 1;
       return;
     }
 
     if (data.moodId === 'motivation') {
-      batch.update(doc(db, 'songs', d.id), {
+      songsToSync.push({
+        mode: 'update',
+        id: d.id,
+        title: String(data.title ?? ''),
+        artist: String(data.artist ?? ''),
+        album: typeof data.album === 'string' ? data.album : undefined,
+        description:
+          typeof data.description === 'string' ? data.description : undefined,
+        language: String(data.language ?? 'Hindi'),
         moodId: 'workout',
-        updatedAt: serverTimestamp(),
+        provider: data.provider === 'audio' ? 'audio' : data.provider === 'pending' ? 'pending' : 'youtube',
+        providerTrackId: String(data.providerTrackId ?? ''),
+        audioUrl: typeof data.audioUrl === 'string' ? data.audioUrl : undefined,
+        artworkUrl: String(data.artworkUrl ?? ''),
+        durationLabel: String(data.durationLabel ?? '3:30'),
+        durationSeconds: Number(data.durationSeconds ?? 210),
+        isLive: Boolean(data.isLive),
+        keywords: Array.isArray(data.keywords) ? data.keywords.map(String) : [],
       });
       migratedSongs += 1;
     }
   });
 
-  // 3. Add missing Workout songs from static catalog (deduplicated)
   const workoutStarterTracks = TRACKS.filter((t) => t.moodId === 'workout');
   workoutStarterTracks.forEach((track) => {
     const safeId = track.id.replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -491,56 +554,48 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
       return;
     }
 
-    const docPayload: Record<string, unknown> = {
+    songsToSync.push({
       id: safeId,
       title: track.title.slice(0, 160),
       artist: track.artist.slice(0, 160),
+      ...(track.album ? { album: track.album.slice(0, 160) } : {}),
+      ...(track.description
+        ? { description: track.description.slice(0, 600) }
+        : {}),
       language: track.language.slice(0, 40),
       moodId: 'workout',
       provider: track.provider,
       providerTrackId: track.providerTrackId.slice(0, 512),
       artworkUrl: track.artworkUrl.slice(0, 1024),
       durationLabel: track.durationLabel.slice(0, 20),
-      durationSeconds: Math.min(86400, Math.max(0, Math.round(track.durationSeconds))),
+      durationSeconds: Math.min(
+        86400,
+        Math.max(0, Math.round(track.durationSeconds))
+      ),
       isLive: Boolean(track.isLive),
       keywords: track.keywords.slice(0, 20),
-      createdBy: user.uid,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-    if (track.album) {
-      docPayload.album = track.album.slice(0, 160);
-    }
-    if (track.description) {
-      docPayload.description = track.description.slice(0, 600);
-    }
-    batch.set(doc(db, 'songs', safeId), docPayload);
+    });
     addedSongs += 1;
   });
 
-  if (mergedMood || migratedSongs > 0 || addedSongs > 0) {
-    await batch.commit();
+  if (
+    moodsToUpsert.length > 0 ||
+    deleteMoodIds.length > 0 ||
+    deleteSongIds.length > 0 ||
+    songsToSync.length > 0
+  ) {
+    await adminApiRequest<{ committed: number }>('/api/admin/catalog/sync', {
+      method: 'POST',
+      body: JSON.stringify({
+        moods: moodsToUpsert,
+        deleteMoodIds,
+        deleteSongIds,
+        songs: songsToSync,
+      }),
+    });
   }
 
   return { migratedSongs, addedSongs, mergedMood };
-}
-
-export async function ensureLanguageExists(languageName: string): Promise<void> {
-  const cleanName = languageName.trim().slice(0, 40);
-  if (!cleanName) return;
-  const id = cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 40);
-  if (!id) return;
-
-  const langRef = doc(db, 'languages', id);
-  const existing = await getDoc(langRef);
-  if (!existing.exists()) {
-    await setDoc(langRef, {
-      id,
-      name: cleanName,
-      sortOrder: 50,
-      updatedAt: serverTimestamp(),
-    });
-  }
 }
 
 export function findDuplicateSong(
@@ -569,103 +624,60 @@ export function findDuplicateSong(
 }
 
 export async function createSongInFirestore(input: SongInput): Promise<string> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('You must be signed in as an admin to add songs.');
-  }
-
-  const songId = `song_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const path = `songs/${songId}`;
-
-  await ensureLanguageExists(input.language);
-
-  const payload: Record<string, unknown> = {
-    id: songId,
-    title: input.title.trim().slice(0, 160),
-    artist: input.artist.trim().slice(0, 160),
-    language: input.language.trim().slice(0, 40),
-    moodId: input.moodId,
-    provider: input.provider,
-    providerTrackId: input.providerTrackId.trim().slice(0, 512),
-    artworkUrl: input.artworkUrl.trim().slice(0, 1024),
-    durationLabel: input.durationLabel.trim().slice(0, 20),
-    durationSeconds: Math.min(86400, Math.max(0, Math.round(input.durationSeconds))),
-    isLive: Boolean(input.isLive),
-    keywords: input.keywords.slice(0, 20),
-    createdBy: user.uid,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  if (input.album?.trim()) {
-    payload.album = input.album.trim().slice(0, 160);
-  }
-  if (input.description?.trim()) {
-    payload.description = input.description.trim().slice(0, 600);
-  }
-  if (input.audioUrl?.trim()) {
-    payload.audioUrl = input.audioUrl.trim().slice(0, 1024);
-  }
-
-  try {
-    await setDoc(doc(db, 'songs', songId), payload);
-    return songId;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, path);
-  }
+  const res = await adminApiRequest<{ id: string }>('/api/admin/songs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return res.id;
 }
 
 export async function updateSongInFirestore(
   songId: string,
   input: SongInput
 ): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('You must be signed in as an admin to update songs.');
-  }
-
-  const path = `songs/${songId}`;
-  await ensureLanguageExists(input.language);
-
-  const payload: Record<string, unknown> = {
-    title: input.title.trim().slice(0, 160),
-    artist: input.artist.trim().slice(0, 160),
-    album: input.album?.trim() ? input.album.trim().slice(0, 160) : '',
-    description: input.description?.trim()
-      ? input.description.trim().slice(0, 600)
-      : '',
-    language: input.language.trim().slice(0, 40),
-    moodId: input.moodId,
-    provider: input.provider,
-    providerTrackId: input.providerTrackId.trim().slice(0, 512),
-    audioUrl: input.audioUrl?.trim() ? input.audioUrl.trim().slice(0, 1024) : '',
-    artworkUrl: input.artworkUrl.trim().slice(0, 1024),
-    durationLabel: input.durationLabel.trim().slice(0, 20),
-    durationSeconds: Math.min(86400, Math.max(0, Math.round(input.durationSeconds))),
-    isLive: Boolean(input.isLive),
-    keywords: input.keywords.slice(0, 20),
-    updatedAt: serverTimestamp(),
-  };
-
-  try {
-    await updateDoc(doc(db, 'songs', songId), payload);
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
-  }
+  await adminApiRequest<{ id: string; updated: boolean }>(
+    `/api/admin/songs/${encodeURIComponent(songId)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    }
+  );
 }
 
 export async function deleteSongFromFirestore(songId: string): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new Error('You must be signed in as an admin to delete songs.');
-  }
+  await adminApiRequest<{ id: string; deleted: boolean }>(
+    `/api/admin/songs/${encodeURIComponent(songId)}`,
+    {
+      method: 'DELETE',
+    }
+  );
+}
 
-  const path = `songs/${songId}`;
-  try {
-    await deleteDoc(doc(db, 'songs', songId));
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, path);
+async function uploadMediaViaAdminApi(
+  file: File,
+  folder: 'artwork' | 'audio'
+): Promise<string> {
+  const authHeaders = await getAdminAuthHeaders();
+  const res = await fetch('/api/admin/upload', {
+    method: 'POST',
+    headers: {
+      ...authHeaders,
+      'Content-Type':
+        file.type || (folder === 'audio' ? 'audio/mpeg' : 'image/jpeg'),
+      'x-media-folder': folder,
+      'x-file-name': file.name.replace(/[^a-zA-Z0-9._-]/g, '_'),
+    },
+    body: file,
+  });
+
+  const payload = (await res.json().catch(() => ({}))) as {
+    url?: string;
+    error?: string;
+  };
+  if (!res.ok || !payload.url) {
+    throw new Error(payload.error || 'Failed to upload media file.');
   }
+  return payload.url;
 }
 
 export async function uploadArtworkFile(file: File): Promise<string> {
@@ -675,11 +687,7 @@ export async function uploadArtworkFile(file: File): Promise<string> {
   if (file.size > 5 * 1024 * 1024) {
     throw new Error('Artwork image must be 5 MB or smaller.');
   }
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const storageRef = ref(storage, `artwork/${Date.now()}_${safeName}`);
-  await uploadBytes(storageRef, file, { contentType: file.type });
-  return await getDownloadURL(storageRef);
+  return uploadMediaViaAdminApi(file, 'artwork');
 }
 
 export async function uploadAuthorizedAudioFile(file: File): Promise<string> {
@@ -692,11 +700,5 @@ export async function uploadAuthorizedAudioFile(file: File): Promise<string> {
   if (file.size > 25 * 1024 * 1024) {
     throw new Error('Authorized audio file must be 25 MB or smaller.');
   }
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const storageRef = ref(storage, `audio/${Date.now()}_${safeName}`);
-  await uploadBytes(storageRef, file, {
-    contentType: file.type || 'audio/mpeg',
-  });
-  return await getDownloadURL(storageRef);
+  return uploadMediaViaAdminApi(file, 'audio');
 }

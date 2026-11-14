@@ -22,6 +22,7 @@ import {
   verifyAdminAccess,
 } from '../../services/catalogService';
 import { Track } from '../../types/music';
+import { evaluateAdminRouteGate } from '../../utils/adminRouting';
 import { ArtworkImage } from '../ArtworkImage';
 import { SongFormModal } from './SongFormModal';
 
@@ -43,6 +44,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [serverAuthError, setServerAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,28 +59,52 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
-  // Auth listener & admin role check
+  // Auth listener & cryptographic server-side admin verification
   useEffect(() => {
+    let active = true;
     const unsub = onAuthStateChanged(auth, async (nextUser) => {
+      if (!active) return;
       setUser(nextUser);
       setAuthError(null);
+      setServerAuthError(null);
+
       if (!nextUser) {
         setIsAuthorized(false);
         setAuthLoading(false);
         return;
       }
 
-      const ok = await verifyAdminAccess(
-        nextUser.uid,
-        nextUser.email,
-        nextUser.emailVerified
-      );
-      setIsAuthorized(ok);
+      setAuthLoading(true);
+      const verification = await verifyAdminAccess();
+      if (!active) return;
+
+      setIsAuthorized(verification.authorized);
+      if (!verification.authorized) {
+        setServerAuthError(
+          verification.error ??
+            'Access Denied: Only the authorized project owner can access the Admin Panel.'
+        );
+      }
       setAuthLoading(false);
     });
 
-    return () => unsub();
+    return () => {
+      active = false;
+      unsub();
+    };
   }, []);
+
+  // Redirect logged-out or unauthorized users away from protected /admin routes
+  useEffect(() => {
+    if (authLoading || typeof window === 'undefined') return;
+    const decision = evaluateAdminRouteGate(window.location.pathname, {
+      isAuthenticated: Boolean(user),
+      isAuthorized,
+    });
+    if (decision.redirectTo && window.location.pathname !== decision.redirectTo) {
+      window.history.replaceState({}, '', decision.redirectTo);
+    }
+  }, [authLoading, isAuthorized, user]);
 
   // Auto-sync starter catalog or Workout merge migration once when authorized admin visits
   useEffect(() => {
@@ -152,7 +178,12 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   };
 
   const handleSignOut = async () => {
+    setIsAuthorized(false);
+    setServerAuthError(null);
     await signOut(auth);
+    if (typeof window !== 'undefined') {
+      window.history.replaceState({}, '', '/admin/login');
+    }
   };
 
   const handleManualSync = async () => {
@@ -279,22 +310,31 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     );
   }
 
-  // Signed in but unauthorized
+  // Signed in but unauthorized -> Access Denied
   if (!isAuthorized) {
     return (
       <div className="max-w-md mx-auto py-12 sm:py-20">
-        <div className="rounded-2xl border border-amber-500/25 bg-[#0D1018] p-6 sm:p-8 space-y-6">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/15 border border-amber-400/30 flex items-center justify-center text-amber-300">
+        <div
+          role="alert"
+          className="rounded-2xl border border-rose-500/30 bg-[#0D1018] p-6 sm:p-8 space-y-6"
+        >
+          <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-400/30 flex items-center justify-center text-rose-300">
             <ShieldAlert className="w-6 h-6" />
           </div>
 
           <div>
             <h1 className="font-display text-2xl font-bold text-white tracking-tight">
-              Access Restricted
+              Access Denied
             </h1>
-            <p className="mt-2 text-sm text-slate-400 leading-relaxed">
-              Signed in as <span className="text-slate-200">{user.email}</span>. This account does not have administrator privileges for this workspace.
+            <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+              Signed in as <span className="font-medium text-white">{user.email}</span>.
+              Only the authorized project owner can access the Vibe Zone Admin Panel.
             </p>
+            {serverAuthError && (
+              <p className="mt-2.5 text-xs text-rose-300 leading-relaxed">
+                {serverAuthError}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
@@ -304,7 +344,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               className="flex-1 h-11 rounded-xl text-sm font-medium text-white bg-white/[0.08] hover:bg-white/[0.12] flex items-center justify-center gap-2"
             >
               <LogOut className="w-4 h-4" />
-              <span>Sign Out</span>
+              <span>Logout</span>
             </button>
             <button
               type="button"
@@ -312,7 +352,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               className="flex-1 h-11 rounded-xl text-sm font-medium text-slate-300 hover:text-white border border-white/[0.1] flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span>Back to App</span>
+              <span>Return to Vibe Zone</span>
             </button>
           </div>
         </div>
@@ -370,7 +410,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-xs sm:text-sm font-medium text-slate-300 border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.08] hover:text-white whitespace-nowrap"
           >
             <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>

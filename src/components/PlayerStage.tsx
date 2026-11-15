@@ -1,27 +1,35 @@
 import {
+  AlertCircle,
   ChevronDown,
   ExternalLink,
   Heart,
+  ListMusic,
   Loader2,
-  Maximize2,
   Pause,
   Play,
+  Repeat,
+  Repeat1,
+  Shuffle,
   SkipBack,
   SkipForward,
+  Video,
   Volume2,
   VolumeX,
+  X,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { motion, useReducedMotion } from 'motion/react';
+import { useEffect, useState } from 'react';
 import { usePlayer } from '../context/PlayerContext';
 import { formatTime } from '../utils/formatTime';
 import { ArtworkImage } from './ArtworkImage';
 
 /**
- * Single persistent YouTube IFrame Player Stage.
- * Never unmounts the YouTube IFrame container so playback remains seamless
- * when toggling between compact docked stage and full Theater View.
+ * Persistent Playback Engine & Full-Screen Expanded Music Player.
+ * Keeps `providerContainerRef` mounted in an invariant DOM path so toggling between
+ * the Mini-Player and Expanded Player never interrupts or recreates playback.
  */
 export function PlayerStage() {
+  const prefersReducedMotion = useReducedMotion();
   const {
     currentTrack,
     queue,
@@ -30,6 +38,9 @@ export function PlayerStage() {
     duration,
     volume,
     isMuted,
+    shuffleEnabled,
+    repeatMode,
+    errorMessage,
     isTheaterOpen,
     setTheaterOpen,
     playTrack,
@@ -39,13 +50,27 @@ export function PlayerStage() {
     seekTo,
     setVolume,
     toggleMute,
+    toggleShuffle,
+    cycleRepeatMode,
     toggleFavourite,
     isFavourite,
+    clearError,
     providerContainerRef,
-    activeProviderName,
     getMood,
+    activeCategoryLabel,
   } = usePlayer();
 
+  const [isQueueOpen, setIsQueueOpen] = useState(false);
+  const [showVideoStage, setShowVideoStage] = useState(false);
+
+  // Reset video toggle if switching to an audio-only track
+  useEffect(() => {
+    if (currentTrack?.provider !== 'youtube') {
+      setShowVideoStage(false);
+    }
+  }, [currentTrack]);
+
+  // Close Expanded Player on Escape
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isTheaterOpen) {
@@ -57,6 +82,9 @@ export function PlayerStage() {
   }, [isTheaterOpen, setTheaterOpen]);
 
   const activeMood = currentTrack ? getMood(currentTrack.moodId) : null;
+  const categoryName =
+    activeCategoryLabel || (activeMood ? activeMood.name : 'Vibe Zone');
+
   const effectiveDuration =
     duration > 0 ? duration : currentTrack?.durationSeconds ?? 0;
   const progressPercent =
@@ -66,165 +94,299 @@ export function PlayerStage() {
   const isPlaying = status === 'playing';
   const isLoading = status === 'loading';
   const fav = currentTrack ? isFavourite(currentTrack.id) : false;
+  const isVideoVisible =
+    isTheaterOpen && showVideoStage && currentTrack?.provider === 'youtube';
 
   return (
     <section
-      aria-label="Active playback stage"
+      aria-label={isTheaterOpen ? 'Expanded music player' : 'Audio playback engine'}
+      aria-hidden={!isTheaterOpen}
       className={
         isTheaterOpen
-          ? 'fixed inset-0 z-50 bg-[#05060A]/95 backdrop-blur-2xl overflow-y-auto'
-          : 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-8'
+          ? 'fixed inset-0 z-50 bg-[#101426] overflow-y-auto'
+          : 'fixed bottom-2 right-2 w-[260px] h-[160px] opacity-0 pointer-events-none -z-10 overflow-hidden'
       }
     >
+      {/* Subtle Animated Ambient Gradient Backdrop (when expanded) */}
+      {isTheaterOpen && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none fixed inset-0 overflow-hidden"
+        >
+          <motion.div
+            className="absolute -top-32 left-1/4 w-[480px] h-[480px] rounded-full blur-3xl"
+            style={{
+              background:
+                'radial-gradient(circle, rgba(53, 107, 255, 0.28), transparent 70%)',
+              willChange: 'transform, opacity',
+            }}
+            animate={
+              prefersReducedMotion
+                ? undefined
+                : {
+                    scale: isPlaying ? [1, 1.12, 1] : 1,
+                    opacity: isPlaying ? [0.55, 0.85, 0.55] : 0.4,
+                  }
+            }
+            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute -bottom-24 right-1/4 w-[460px] h-[460px] rounded-full blur-3xl"
+            style={{
+              background:
+                'radial-gradient(circle, rgba(167, 139, 250, 0.24), transparent 70%)',
+              willChange: 'transform, opacity',
+            }}
+            animate={
+              prefersReducedMotion
+                ? undefined
+                : {
+                    scale: isPlaying ? [1.06, 0.96, 1.06] : 1,
+                    opacity: isPlaying ? [0.5, 0.78, 0.5] : 0.35,
+                  }
+            }
+            transition={{ duration: 6.4, repeat: Infinity, ease: 'easeInOut' }}
+          />
+        </div>
+      )}
+
       <div
         className={
           isTheaterOpen
-            ? 'max-w-6xl mx-auto min-h-full px-4 sm:px-6 lg:px-8 py-5 sm:py-8 flex flex-col justify-between gap-6'
-            : 'rounded-2xl border border-white/[0.08] bg-[#0B0E16] p-4 sm:p-6'
+            ? 'relative z-10 max-w-6xl mx-auto min-h-full px-4 sm:px-6 lg:px-8 py-4 sm:py-7 flex flex-col justify-between gap-6'
+            : 'w-full h-full'
         }
       >
-        {/* Header Bar when Theater is Open vs Inline Dock Header */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-indigo-400">
-              {activeProviderName}
-              {activeMood ? ` · ${activeMood.emoji} ${activeMood.name}` : ''}
-            </p>
-            <h2 className="font-display text-base sm:text-lg font-semibold text-white truncate mt-0.5">
-              {currentTrack
-                ? currentTrack.title
-                : 'Select a mood or track to begin listening'}
-            </h2>
-          </div>
+        {/* Top Bar: Minimize, Category Label, Queue & Video Toggle */}
+        {isTheaterOpen && (
+          <header className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() => setTheaterOpen(false)}
+              aria-label="Minimize music player"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl text-sm font-medium text-slate-200 hover:text-white border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.09] transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+            >
+              <ChevronDown className="w-5 h-5" />
+              <span className="hidden sm:inline">Minimize</span>
+            </button>
 
-          <div className="flex items-center gap-2 shrink-0">
-            {currentTrack && currentTrack.provider === 'youtube' && (
-              <a
-                href={`https://www.youtube.com/watch?v=${currentTrack.providerTrackId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] rounded-xl text-xs font-medium text-slate-300 hover:text-white border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.07] transition-colors whitespace-nowrap"
-              >
-                <span>YouTube</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
-            )}
+            <div className="min-w-0 text-center">
+              <p className="text-[11px] font-medium text-[#A78BFA] uppercase tracking-wider truncate">
+                Playing from
+              </p>
+              <p className="text-sm font-semibold text-white truncate">
+                {categoryName}
+              </p>
+            </div>
 
-            {isTheaterOpen ? (
-              <button
-                type="button"
-                onClick={() => setTheaterOpen(false)}
-                aria-label="Minimize player stage"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-xl text-xs font-medium text-white bg-white/10 hover:bg-white/15 transition-colors whitespace-nowrap"
-              >
-                <ChevronDown className="w-4 h-4" />
-                <span>Minimize</span>
-              </button>
-            ) : (
-              currentTrack && (
+            <div className="flex items-center gap-2 shrink-0">
+              {currentTrack?.provider === 'youtube' && (
                 <button
                   type="button"
-                  onClick={() => setTheaterOpen(true)}
-                  aria-label="Expand full theater view"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-xl text-xs font-medium text-white bg-indigo-600/90 hover:bg-indigo-500 transition-colors whitespace-nowrap"
+                  onClick={() => setShowVideoStage((prev) => !prev)}
+                  aria-label={showVideoStage ? 'Show album artwork' : 'Show YouTube video'}
+                  aria-pressed={showVideoStage}
+                  className={`min-h-[44px] px-3 rounded-xl inline-flex items-center gap-1.5 text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                    showVideoStage
+                      ? 'bg-[#356BFF] border-[#356BFF] text-white'
+                      : 'border-white/[0.1] bg-white/[0.04] text-slate-200 hover:text-white hover:bg-white/[0.09]'
+                  }`}
                 >
-                  <Maximize2 className="w-3.5 h-3.5" />
-                  <span>Expand Stage</span>
+                  <Video className="w-4 h-4" />
+                  <span className="hidden sm:inline">
+                    {showVideoStage ? 'Artwork' : 'Video'}
+                  </span>
                 </button>
-              )
-            )}
-          </div>
-        </div>
+              )}
 
-        {/* Main Content Grid: Persistent YouTube IFrame + Controls / Queue */}
+              <button
+                type="button"
+                onClick={() => setIsQueueOpen((prev) => !prev)}
+                aria-label={isQueueOpen ? 'Hide playback queue' : 'Show playback queue'}
+                aria-expanded={isQueueOpen}
+                className={`min-w-[44px] min-h-[44px] px-3 rounded-xl inline-flex items-center justify-center gap-1.5 text-xs font-medium border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                  isQueueOpen
+                    ? 'bg-[#A78BFA]/20 border-[#A78BFA]/50 text-white'
+                    : 'border-white/[0.1] bg-white/[0.04] text-slate-200 hover:text-white hover:bg-white/[0.09]'
+                }`}
+              >
+                <ListMusic className="w-4 h-4" />
+                <span className="hidden sm:inline">Queue</span>
+              </button>
+            </div>
+          </header>
+        )}
+
+        {/* Main Stage Body (Grid switches smoothly if Queue Drawer is open on desktop) */}
         <div
           className={
             isTheaterOpen
-              ? 'grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] gap-6 lg:gap-8 items-start my-auto'
-              : 'mt-4 flex flex-col sm:flex-row items-start sm:items-center gap-5'
+              ? `grid grid-cols-1 ${
+                  isQueueOpen
+                    ? 'lg:grid-cols-[minmax(0,1.25fr)_minmax(0,0.9fr)] gap-8 items-center'
+                    : 'max-w-xl w-full mx-auto'
+                } my-auto`
+              : 'w-full h-full'
           }
         >
-          {/* Persistent YouTube IFrame Wrapper (>= 280x200 always compliant with YouTube policy) */}
+          {/* Left / Centered Player Column */}
           <div
             className={
               isTheaterOpen
-                ? 'w-full space-y-5'
-                : 'w-full sm:w-[320px] shrink-0'
+                ? 'flex flex-col items-center w-full gap-6 sm:gap-7'
+                : 'w-full h-full'
             }
           >
+            {/* Centerpiece: Large Centered Artwork + Invariant Provider Host */}
             <div
-              className={`relative overflow-hidden rounded-2xl border border-white/[0.1] bg-black ${
+              className={
                 isTheaterOpen
-                  ? 'w-full aspect-video min-h-[220px]'
-                  : 'w-full h-[200px]'
-              }`}
+                  ? isVideoVisible
+                    ? 'relative w-full max-w-lg'
+                    : 'relative w-[250px] h-[250px] sm:w-[320px] sm:h-[320px]'
+                  : 'w-full h-full'
+              }
             >
-              <div ref={providerContainerRef} className="w-full h-full" />
-
-              {!currentTrack && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#090B12]/90 px-4 text-center pointer-events-none">
-                  <p className="font-display text-sm font-semibold text-slate-200">
-                    Official Playback Stage Ready
-                  </p>
-                  <p className="mt-1 text-xs text-slate-400">
-                    Pick any mood card or track to start playback.
-                  </p>
-                </div>
+              {/* Soft Luminous Halo Behind Artwork */}
+              {isTheaterOpen && !isVideoVisible && (
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -inset-4 rounded-[36px] blur-2xl transition-opacity duration-500"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, rgba(53, 107, 255, 0.35), rgba(167, 139, 250, 0.28))',
+                    opacity: isPlaying ? 0.9 : 0.45,
+                  }}
+                />
               )}
 
-              {currentTrack && currentTrack.provider === 'audio' && (
-                <div className="absolute inset-0 bg-[#090B12] flex items-center justify-center">
+              {/* Large Centered Album Artwork */}
+              {isTheaterOpen && !isVideoVisible && currentTrack && (
+                <motion.div
+                  initial={
+                    prefersReducedMotion
+                      ? { opacity: 1 }
+                      : { opacity: 0.7, scale: 0.96 }
+                  }
+                  animate={{ opacity: 1, scale: isPlaying ? 1 : 0.97 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="relative w-full h-full rounded-3xl overflow-hidden border border-white/[0.16] bg-[#161B33] shadow-[0_24px_70px_-15px_rgba(0,0,0,0.75)]"
+                >
                   <ArtworkImage
                     src={currentTrack.artworkUrl}
                     fallbackSrc={currentTrack.fallbackArtwork}
                     alt={currentTrack.title}
-                    className="w-full h-full object-cover opacity-85"
+                    className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3">
-                    <p className="text-xs font-medium text-indigo-300">
-                      Authorized Audio Stream
-                    </p>
-                    <p className="text-sm font-semibold text-white truncate">
-                      {currentTrack.title}
-                    </p>
-                  </div>
-                </div>
+                  {isLoading && (
+                    <div className="absolute inset-0 bg-[#101426]/65 backdrop-blur-xs flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="w-8 h-8 animate-spin text-[#A78BFA]" />
+                      <span className="text-xs font-medium text-slate-200">
+                        Buffering...
+                      </span>
+                    </div>
+                  )}
+                </motion.div>
               )}
+
+              {/* Invariant Provider Container (NEVER unmounted across views) */}
+              <div
+                ref={providerContainerRef}
+                className={
+                  isVideoVisible
+                    ? 'relative w-full aspect-video rounded-3xl overflow-hidden border border-white/[0.16] bg-black shadow-2xl'
+                    : isTheaterOpen
+                      ? 'fixed bottom-2 right-2 w-[260px] h-[160px] opacity-0 pointer-events-none -z-10'
+                      : 'w-full h-full'
+                }
+              />
             </div>
 
-            {/* Full Transport Controls inside Theater Mode */}
+            {/* Song Info, Progress Bar, and Full Transport Controls */}
             {isTheaterOpen && currentTrack && (
-              <div className="rounded-2xl border border-white/[0.08] bg-[#0D1019] p-4 sm:p-5 space-y-4">
+              <div className="w-full max-w-lg space-y-5">
+                {/* Inline Error Recovery Banner */}
+                {errorMessage && (
+                  <div
+                    role="alert"
+                    className="rounded-2xl border border-amber-500/35 bg-amber-500/10 px-4 py-3 flex items-start gap-3"
+                  >
+                    <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs text-amber-200 leading-relaxed">
+                        {errorMessage}
+                      </p>
+                      <div className="mt-2 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            clearError();
+                            nextTrack();
+                          }}
+                          className="text-xs font-semibold text-[#A78BFA] hover:text-white underline underline-offset-2"
+                        >
+                          Next song
+                        </button>
+                        {currentTrack.provider === 'youtube' && (
+                          <a
+                            href={`https://www.youtube.com/watch?v=${currentTrack.providerTrackId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-slate-200 hover:text-white inline-flex items-center gap-1"
+                          >
+                            <span>Open on YouTube</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearError}
+                      aria-label="Dismiss error"
+                      className="p-1 text-slate-300 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Title, Artist, Category & Favourite */}
                 <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <h3 className="font-display text-lg sm:text-xl font-bold text-white truncate">
+                  <div className="min-w-0 flex-1">
+                    <h2 className="font-display text-2xl sm:text-3xl font-bold text-white truncate tracking-tight">
                       {currentTrack.title}
-                    </h3>
-                    <p className="text-sm text-slate-400 mt-0.5 truncate">
+                    </h2>
+                    <p className="mt-1 text-sm sm:text-base text-slate-300 truncate">
                       {currentTrack.artist}
-                      {activeMood ? ` · ${activeMood.emoji} ${activeMood.name}` : ''}
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#A78BFA] truncate">
+                      {categoryName} · {currentTrack.language}
                     </p>
                   </div>
 
                   <button
                     type="button"
                     onClick={() => toggleFavourite(currentTrack.id)}
-                    aria-label={fav ? 'Remove from favourites' : 'Save to favourites'}
-                    className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-white/[0.08] transition-colors ${
+                    aria-label={
+                      fav ? 'Remove from favourites' : 'Save to favourites'
+                    }
+                    className={`min-w-[48px] min-h-[48px] flex items-center justify-center rounded-2xl border transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
                       fav
-                        ? 'text-indigo-400 bg-indigo-500/10 border-indigo-400/30'
-                        : 'text-slate-300 hover:text-white bg-white/[0.03]'
+                        ? 'text-[#A78BFA] bg-[#A78BFA]/15 border-[#A78BFA]/45'
+                        : 'text-slate-300 hover:text-white border-white/[0.12] bg-white/[0.04]'
                     }`}
                   >
-                    <Heart className={`w-5 h-5 ${fav ? 'fill-current' : ''}`} />
+                    <Heart
+                      className={`w-5 h-5 ${fav ? 'fill-current' : ''}`}
+                    />
                   </button>
                 </div>
 
-                {/* Seek Bar */}
-                <div className="space-y-1.5">
+                {/* Progress Scrubber & Timestamps */}
+                <div className="space-y-2">
                   {currentTrack.isLive ? (
-                    <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-indigo-500 via-blue-500 to-indigo-500" />
+                    <div className="h-1.5 w-full rounded-full bg-gradient-to-r from-[#356BFF] via-[#A78BFA] to-[#356BFF]" />
                   ) : (
                     <input
                       type="range"
@@ -235,61 +397,93 @@ export function PlayerStage() {
                       value={Math.min(currentTime, effectiveDuration || 100)}
                       onChange={(e) => seekTo(Number(e.target.value))}
                       style={{
-                        background: `linear-gradient(to right, #6366F1 0%, #3B82F6 ${progressPercent}%, rgba(255,255,255,0.12) ${progressPercent}%, rgba(255,255,255,0.12) 100%)`,
+                        background: `linear-gradient(to right, #356BFF 0%, #A78BFA ${progressPercent}%, rgba(255,255,255,0.14) ${progressPercent}%, rgba(255,255,255,0.14) 100%)`,
                       }}
                       className="sona-range w-full h-1.5 rounded-full"
                     />
                   )}
-                  <div className="flex items-center justify-between font-mono text-xs text-slate-400 tabular-nums">
+                  <div className="flex items-center justify-between font-mono text-xs text-slate-300/85 tabular-nums">
                     <span>
                       {currentTrack.isLive ? 'LIVE' : formatTime(currentTime)}
                     </span>
                     <span>
                       {currentTrack.isLive
-                        ? '24/7 STREAM'
+                        ? 'STREAM'
                         : formatTime(effectiveDuration)}
                     </span>
                   </div>
                 </div>
 
-                {/* Buttons + Volume */}
-                <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={previousTrack}
-                      aria-label="Previous track"
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-white transition-colors"
-                    >
-                      <SkipBack className="w-5 h-5 fill-current" />
-                    </button>
+                {/* Main Controls: Shuffle, Previous, Play/Pause, Next, Repeat */}
+                <div className="flex items-center justify-between gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={toggleShuffle}
+                    aria-label={shuffleEnabled ? 'Disable shuffle' : 'Enable shuffle'}
+                    aria-pressed={shuffleEnabled}
+                    className={`min-w-[46px] min-h-[46px] flex items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                      shuffleEnabled
+                        ? 'text-[#A78BFA] bg-[#A78BFA]/15'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    <Shuffle className="w-5 h-5" />
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={togglePlayPause}
-                      aria-label={isPlaying ? 'Pause' : 'Play'}
-                      className="w-12 h-12 rounded-full flex items-center justify-center bg-gradient-to-r from-indigo-500 to-blue-500 hover:from-indigo-400 hover:to-blue-400 text-white shadow-lg shadow-indigo-950/60 transition-transform active:scale-95"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                      ) : isPlaying ? (
-                        <Pause className="w-5 h-5 fill-current" />
-                      ) : (
-                        <Play className="w-5 h-5 fill-current translate-x-[1px]" />
-                      )}
-                    </button>
+                  <button
+                    type="button"
+                    onClick={previousTrack}
+                    aria-label="Previous song"
+                    className="min-w-[52px] min-h-[52px] flex items-center justify-center rounded-2xl text-white hover:bg-white/[0.08] active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+                  >
+                    <SkipBack className="w-6 h-6 fill-current" />
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={nextTrack}
-                      aria-label="Next track"
-                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/[0.05] hover:bg-white/[0.1] text-white transition-colors"
-                    >
-                      <SkipForward className="w-5 h-5 fill-current" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={togglePlayPause}
+                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                    className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-r from-[#356BFF] to-[#A78BFA] hover:brightness-110 text-white shadow-[0_14px_35px_-6px_rgba(53,107,255,0.65)] active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="w-7 h-7 animate-spin" />
+                    ) : isPlaying ? (
+                      <Pause className="w-7 h-7 fill-current" />
+                    ) : (
+                      <Play className="w-7 h-7 fill-current translate-x-[1.5px]" />
+                    )}
+                  </button>
 
-                  <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={nextTrack}
+                    aria-label="Next song"
+                    className="min-w-[52px] min-h-[52px] flex items-center justify-center rounded-2xl text-white hover:bg-white/[0.08] active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+                  >
+                    <SkipForward className="w-6 h-6 fill-current" />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={cycleRepeatMode}
+                    aria-label={`Repeat mode: ${repeatMode}`}
+                    className={`min-w-[46px] min-h-[46px] flex items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                      repeatMode !== 'off'
+                        ? 'text-[#356BFF] bg-[#356BFF]/15'
+                        : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                    }`}
+                  >
+                    {repeatMode === 'one' ? (
+                      <Repeat1 className="w-5 h-5" />
+                    ) : (
+                      <Repeat className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+
+                {/* Secondary Row: Volume & Quick Close */}
+                <div className="flex items-center justify-between gap-4 pt-2 border-t border-white/[0.08]">
+                  <div className="flex items-center gap-2.5 flex-1 max-w-xs">
                     <button
                       type="button"
                       onClick={toggleMute}
@@ -310,46 +504,71 @@ export function PlayerStage() {
                       value={isMuted ? 0 : volume}
                       onChange={(e) => setVolume(Number(e.target.value))}
                       style={{
-                        background: `linear-gradient(to right, #6366F1 0%, #3B82F6 ${
+                        background: `linear-gradient(to right, #356BFF 0%, #A78BFA ${
                           isMuted ? 0 : volume
                         }%, rgba(255,255,255,0.14) ${
                           isMuted ? 0 : volume
                         }%, rgba(255,255,255,0.14) 100%)`,
                       }}
-                      className="sona-range w-28 sm:w-32 h-1 rounded-full"
+                      className="sona-range flex-1 h-1 rounded-full"
                     />
                   </div>
+
+                  {currentTrack.provider === 'youtube' && (
+                    <a
+                      href={`https://www.youtube.com/watch?v=${currentTrack.providerTrackId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs text-slate-300 hover:text-white py-2 px-3 rounded-xl hover:bg-white/[0.05] transition-colors shrink-0"
+                    >
+                      <span>YouTube</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
                 </div>
               </div>
             )}
           </div>
 
-          {/* Right side: Queue list in Theater mode, or calm summary when inline */}
-          {isTheaterOpen ? (
-            <div className="rounded-2xl border border-white/[0.08] bg-[#0D1019] p-4 sm:p-5">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display text-base font-semibold text-white">
-                  Mood Queue
-                </h3>
-                <span className="text-xs text-slate-400 tabular-nums">
-                  {queue.length} tracks
-                </span>
+          {/* Interactive Queue Panel */}
+          {isTheaterOpen && isQueueOpen && (
+            <div className="rounded-3xl border border-white/[0.1] bg-[#141933]/80 backdrop-blur-xl p-4 sm:p-5 w-full">
+              <div className="flex items-center justify-between gap-3 mb-3.5">
+                <div>
+                  <h3 className="font-display text-base font-semibold text-white">
+                    Up Next Queue
+                  </h3>
+                  <p className="text-xs text-slate-400 tabular-nums">
+                    {queue.length} {queue.length === 1 ? 'song' : 'songs'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsQueueOpen(false)}
+                  aria-label="Close queue panel"
+                  className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-white/[0.08]"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-              <div className="divide-y divide-white/[0.06] max-h-[420px] overflow-y-auto pr-1">
+
+              <div className="divide-y divide-white/[0.06] max-h-[360px] lg:max-h-[460px] overflow-y-auto pr-1">
                 {queue.map((track) => {
                   const active = currentTrack?.id === track.id;
                   return (
                     <button
                       key={track.id}
                       type="button"
-                      onClick={() => playTrack(track, queue)}
+                      onClick={() =>
+                        playTrack(track, queue, activeCategoryLabel)
+                      }
                       className={`w-full flex items-center gap-3 py-2.5 px-2.5 rounded-xl text-left transition-colors ${
                         active
-                          ? 'bg-indigo-500/15 text-indigo-200'
-                          : 'hover:bg-white/[0.04] text-slate-200'
+                          ? 'bg-gradient-to-r from-[#356BFF]/25 to-[#A78BFA]/15 text-white'
+                          : 'hover:bg-white/[0.05] text-slate-200'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-white/[0.08]">
+                      <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-white/[0.1]">
                         <ArtworkImage
                           src={track.artworkUrl}
                           fallbackSrc={track.fallbackArtwork}
@@ -373,24 +592,11 @@ export function PlayerStage() {
                 })}
               </div>
             </div>
-          ) : (
-            <div className="min-w-0 flex-1 space-y-2">
-              <p className="text-xs font-medium text-indigo-300">
-                Official YouTube Playback
-              </p>
-              <p className="text-sm text-slate-300 leading-relaxed max-w-xl">
-                {currentTrack
-                  ? `Now streaming "${currentTrack.title}" by ${currentTrack.artist} via the official YouTube IFrame Player API.`
-                  : 'Playback runs directly through the official YouTube IFrame Player API with modular provider isolation for future music services.'}
-              </p>
-              {currentTrack && (
-                <p className="text-xs text-slate-400">
-                  Use the player bar below on desktop, or tap the mini-player on mobile to open full controls and queue.
-                </p>
-              )}
-            </div>
           )}
         </div>
+
+        {/* Bottom Spacer on Expanded Overlay */}
+        {isTheaterOpen && <div className="h-2" />}
       </div>
     </section>
   );

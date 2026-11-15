@@ -2,19 +2,25 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { PlayerBar } from './components/PlayerBar';
 import { PlayerStage } from './components/PlayerStage';
+import { SplashScreen } from './components/SplashScreen';
 import { TopNav } from './components/TopNav';
 import { AdminView } from './components/admin/AdminView';
+import { CategoryMusicView } from './components/views/CategoryMusicView';
+import { ExperienceHomeView } from './components/views/ExperienceHomeView';
 import { ExploreView } from './components/views/ExploreView';
-import { HomeView } from './components/views/HomeView';
 import { LibraryView } from './components/views/LibraryView';
 import { SearchView } from './components/views/SearchView';
+import { SwipeDeckView } from './components/views/SwipeDeckView';
 import {
   PlayerProvider,
   getRandomMoodId,
   usePlayer,
 } from './context/PlayerContext';
+import { ExperienceCategoryConfig, ExperienceMode } from './data/experiences';
 import { SectionView } from './types/music';
 import { isProtectedAdminPath } from './utils/adminRouting';
+
+type HomeStage = 'experience' | 'deck' | 'category';
 
 function getInitialSection(): SectionView {
   if (
@@ -28,6 +34,15 @@ function getInitialSection(): SectionView {
 
 function SonaShell() {
   const [activeSection, setActiveSection] = useState<SectionView>(getInitialSection);
+  const [homeStage, setHomeStage] = useState<HomeStage>('experience');
+  const [selectedMode, setSelectedMode] = useState<ExperienceMode>('activity');
+  const [deckIndexByMode, setDeckIndexByMode] = useState<Record<ExperienceMode, number>>({
+    activity: 0,
+    feel: 0,
+  });
+  const [selectedCategory, setSelectedCategory] =
+    useState<ExperienceCategoryConfig | null>(null);
+
   const {
     moods,
     getMood,
@@ -53,6 +68,9 @@ function SonaShell() {
 
   const handleNavigate = (section: SectionView) => {
     setActiveSection(section);
+    if (section === 'home') {
+      setHomeStage('experience');
+    }
     if (section === 'admin') {
       if (!isProtectedAdminPath(window.location.pathname)) {
         window.history.pushState({}, '', '/admin');
@@ -60,6 +78,18 @@ function SonaShell() {
     } else if (isProtectedAdminPath(window.location.pathname)) {
       window.history.pushState({}, '', '/');
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectMode = (mode: ExperienceMode) => {
+    setSelectedMode(mode);
+    setHomeStage('deck');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSelectCategory = (category: ExperienceCategoryConfig) => {
+    setSelectedCategory(category);
+    setHomeStage('category');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -72,13 +102,20 @@ function SonaShell() {
   };
 
   return (
-    <div className="relative min-h-screen bg-[#07080B] text-slate-100 flex flex-col">
+    <div
+      className={`relative min-h-screen text-slate-100 flex flex-col transition-colors duration-300 ${
+        activeSection === 'home' ? 'bg-[#101426]' : 'bg-[#07080B]'
+      }`}
+    >
       {/* Subtle Ambient Mood Glow */}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-x-0 top-0 h-[420px] transition-opacity duration-500"
         style={{
-          background: `radial-gradient(ellipse 70% 50% at 50% -10%, ${activeMood.glowColor}, transparent 75%)`,
+          background:
+            activeSection === 'home' && homeStage !== 'category'
+              ? 'radial-gradient(ellipse 70% 50% at 50% -10%, rgba(53, 107, 255, 0.28), transparent 75%)'
+              : `radial-gradient(ellipse 70% 50% at 50% -10%, ${activeMood.glowColor}, transparent 75%)`,
         }}
       />
 
@@ -92,15 +129,37 @@ function SonaShell() {
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-6">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeSection}
+            key={activeSection === 'home' ? `home-${homeStage}-${selectedMode}` : activeSection}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.16, ease: [0.16, 1, 0.3, 1] }}
           >
-            {activeSection === 'home' && (
-              <HomeView onNavigate={handleNavigate} />
+            {activeSection === 'home' && homeStage === 'experience' && (
+              <ExperienceHomeView
+                onSelectMode={handleSelectMode}
+                onNavigate={handleNavigate}
+              />
             )}
+            {activeSection === 'home' && homeStage === 'deck' && (
+              <SwipeDeckView
+                mode={selectedMode}
+                activeIndex={deckIndexByMode[selectedMode]}
+                onIndexChange={(idx) =>
+                  setDeckIndexByMode((prev) => ({ ...prev, [selectedMode]: idx }))
+                }
+                onBackToModes={() => setHomeStage('experience')}
+                onSelectCategory={handleSelectCategory}
+              />
+            )}
+            {activeSection === 'home' &&
+              homeStage === 'category' &&
+              selectedCategory && (
+                <CategoryMusicView
+                  category={selectedCategory}
+                  onBackToDeck={() => setHomeStage('deck')}
+                />
+              )}
             {activeSection === 'explore' && <ExploreView />}
             {activeSection === 'search' && <SearchView />}
             {activeSection === 'recent' && (
@@ -155,9 +214,15 @@ function SonaShell() {
 }
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return !isProtectedAdminPath(window.location.pathname);
+  });
+
   return (
     <PlayerProvider>
       <SonaShell />
+      {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
     </PlayerProvider>
   );
 }

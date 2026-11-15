@@ -7,6 +7,7 @@ import {
   type AdminRequest,
   type VerifiedFirebaseUser,
   createRequireAdminMiddleware,
+  resolveAdminEmail,
 } from './server/auth.ts';
 import {
   type FirebaseClientConfig,
@@ -17,8 +18,22 @@ import {
   uploadMediaToFirebaseStorage,
 } from './server/firestoreRest.ts';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+function getModuleDir(): string {
+  try {
+    if (typeof __dirname !== 'undefined') return __dirname;
+  } catch {
+    // Ignore when __dirname is unavailable in ESM
+  }
+  try {
+    const metaUrl = import.meta?.url;
+    if (typeof metaUrl === 'string' && metaUrl.startsWith('file:')) {
+      return path.dirname(fileURLToPath(metaUrl));
+    }
+  } catch {
+    // Ignore when bundled as CJS
+  }
+  return process.cwd();
+}
 
 const VALID_ID_REGEX = /^[a-zA-Z0-9_-]{1,128}$/;
 const VALID_MOOD_IDS = new Set([
@@ -34,17 +49,51 @@ const VALID_MOOD_IDS = new Set([
 ]);
 const VALID_PROVIDERS = new Set(['youtube', 'audio', 'pending']);
 
+const PUBLIC_FIREBASE_FALLBACK: FirebaseClientConfig = {
+  projectId: 'gen-lang-client-0027379656',
+  firestoreDatabaseId: 'ai-studio-sona-f3bb3f76-6c63-4d76-a1f9-30f037984cb2',
+  storageBucket: 'gen-lang-client-0027379656.firebasestorage.app',
+};
+
 function loadFirebaseConfig(): FirebaseClientConfig {
-  const configPath = path.join(__dirname, 'firebase-applet-config.json');
-  const raw = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
-    projectId: string;
-    firestoreDatabaseId: string;
-    storageBucket: string;
-  };
+  const envProjectId = process.env.FIREBASE_PROJECT_ID?.trim();
+  const envDbId = process.env.FIREBASE_DATABASE_ID?.trim();
+  const envBucket = process.env.FIREBASE_STORAGE_BUCKET?.trim();
+
+  if (envProjectId && envDbId && envBucket) {
+    return {
+      projectId: envProjectId,
+      firestoreDatabaseId: envDbId,
+      storageBucket: envBucket,
+    };
+  }
+
+  const moduleDir = getModuleDir();
+  const candidatePaths = [
+    path.join(moduleDir, 'firebase-applet-config.json'),
+    path.join(moduleDir, '..', 'firebase-applet-config.json'),
+    path.join(process.cwd(), 'firebase-applet-config.json'),
+  ];
+
+  for (const configPath of candidatePaths) {
+    if (fs.existsSync(configPath)) {
+      const raw = JSON.parse(fs.readFileSync(configPath, 'utf8')) as {
+        projectId: string;
+        firestoreDatabaseId: string;
+        storageBucket: string;
+      };
+      return {
+        projectId: envProjectId || raw.projectId,
+        firestoreDatabaseId: envDbId || raw.firestoreDatabaseId,
+        storageBucket: envBucket || raw.storageBucket,
+      };
+    }
+  }
+
   return {
-    projectId: raw.projectId,
-    firestoreDatabaseId: raw.firestoreDatabaseId,
-    storageBucket: raw.storageBucket,
+    projectId: envProjectId || PUBLIC_FIREBASE_FALLBACK.projectId,
+    firestoreDatabaseId: envDbId || PUBLIC_FIREBASE_FALLBACK.firestoreDatabaseId,
+    storageBucket: envBucket || PUBLIC_FIREBASE_FALLBACK.storageBucket,
   };
 }
 
@@ -173,13 +222,11 @@ function sanitizeSongPayload(body: unknown): {
 export function createApiApp(options: ServerAppOptions = {}): express.Express {
   const app = express();
   const firebaseConfig = options.firebaseConfig ?? loadFirebaseConfig();
-  const adminEmail = (
-    options.adminEmail ??
-    process.env.ADMIN_EMAIL ??
-    'dhurianiket94@gmail.com'
-  )
-    .trim()
-    .toLowerCase();
+  const adminEmail = resolveAdminEmail({
+    explicitEmail: options.adminEmail,
+    envEmail: process.env.ADMIN_EMAIL,
+    fallbackEmail: 'dhurianiket94@gmail.com',
+  });
 
   const commitWrites = options.commitWrites ?? commitFirestoreWrites;
   const listCollection = options.listCollection ?? listFirestoreCollection;
@@ -192,7 +239,18 @@ export function createApiApp(options: ServerAppOptions = {}): express.Express {
     verifyToken: options.verifyToken,
   });
 
-  app.use(express.json({ limit: '2mb' }));
+  const jsonParser = express.json({ limit: '2mb' });
+  app.use((req, res, next) => {
+    if (
+      req.body !== undefined &&
+      typeof req.body === 'object' &&
+      !Buffer.isBuffer(req.body)
+    ) {
+      next();
+      return;
+    }
+    jsonParser(req, res, next);
+  });
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
@@ -624,7 +682,7 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distDir = path.join(__dirname, 'dist');
+    const distDir = path.join(getModuleDir(), 'dist');
     app.use(express.static(distDir));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distDir, 'index.html'));
@@ -637,6 +695,11 @@ async function startServer() {
   });
 }
 
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+if (
+  !process.env.VERCEL &&
+  process.argv[1] &&
+  typeof import.meta?.url === 'string' &&
+  pathToFileURL(process.argv[1]).href === import.meta.url
+) {
   void startServer();
 }

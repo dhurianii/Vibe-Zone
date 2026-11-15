@@ -123,6 +123,8 @@ export interface AdminVerificationResult {
   authorized: boolean;
   email?: string;
   error?: string;
+  status?: number;
+  isServerError?: boolean;
 }
 
 export async function verifyAdminAccess(): Promise<AdminVerificationResult> {
@@ -131,22 +133,70 @@ export async function verifyAdminAccess(): Promise<AdminVerificationResult> {
     return { authorized: false, error: 'Authentication required.' };
   }
 
-  try {
-    const headers = await getAdminAuthHeaders();
-    const res = await fetch('/api/admin/session', {
+  const callSessionEndpoint = async (forceRefresh: boolean) => {
+    const idToken = await user.getIdToken(forceRefresh);
+    return fetch('/api/admin/session', {
       method: 'GET',
-      headers,
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
     });
+  };
+
+  try {
+    let res = await callSessionEndpoint(false);
+    if (res.status === 401) {
+      // Force-refresh Firebase ID token once in case of stale token / auth state transition
+      res = await callSessionEndpoint(true);
+    }
+
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      return {
+        authorized: false,
+        email: user.email ?? undefined,
+        status: res.status,
+        isServerError: true,
+        error: `Admin verification API (/api/admin/session) returned an unexpected response (${res.status}). Ensure /api serverless routes are deployed on Vercel.`,
+      };
+    }
+
     const data = (await res.json().catch(() => ({}))) as {
       authorized?: boolean;
       email?: string;
       error?: string;
     };
 
+    if (res.status >= 500 || res.status === 404) {
+      return {
+        authorized: false,
+        email: user.email ?? undefined,
+        status: res.status,
+        isServerError: true,
+        error:
+          data.error ||
+          `Server verification error (${res.status}). Check Vercel environment variables and API logs.`,
+      };
+    }
+
+    if (res.status === 401) {
+      return {
+        authorized: false,
+        email: user.email ?? undefined,
+        status: res.status,
+        isServerError: true,
+        error:
+          data.error ||
+          'Authentication token could not be verified by the server. Please retry or sign in again.',
+      };
+    }
+
     if (!res.ok || !data.authorized) {
       return {
         authorized: false,
         email: user.email ?? undefined,
+        status: res.status,
+        isServerError: false,
         error:
           data.error ||
           'Access Denied: This Google account is not authorized for Admin Panel access.',
@@ -156,15 +206,18 @@ export async function verifyAdminAccess(): Promise<AdminVerificationResult> {
     return {
       authorized: true,
       email: data.email ?? user.email ?? undefined,
+      status: res.status,
+      isServerError: false,
     };
   } catch (err) {
     return {
       authorized: false,
       email: user.email ?? undefined,
+      isServerError: true,
       error:
         err instanceof Error
           ? err.message
-          : 'Unable to verify administrator session with the server.',
+          : 'Unable to reach admin verification service.',
     };
   }
 }

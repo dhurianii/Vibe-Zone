@@ -30,9 +30,11 @@ function decodeBase64Url(segment: string): Buffer {
   return Buffer.from(normalized + '='.repeat(padLength), 'base64');
 }
 
-export async function fetchFirebasePublicCerts(): Promise<Record<string, string>> {
+export async function fetchFirebasePublicCerts(
+  forceRefresh = false
+): Promise<Record<string, string>> {
   const now = Date.now();
-  if (cachedCerts && cachedCerts.expiresAtMs > now) {
+  if (!forceRefresh && cachedCerts && cachedCerts.expiresAtMs > now) {
     return cachedCerts.certs;
   }
 
@@ -118,8 +120,12 @@ export async function verifyFirebaseIdToken(
   }
 
   const getCerts = options.getPublicCerts ?? fetchFirebasePublicCerts;
-  const certs = await getCerts();
-  const publicCert = certs[header.kid];
+  let certs = await getCerts();
+  let publicCert = certs[header.kid];
+  if (!publicCert && !options.getPublicCerts) {
+    certs = await fetchFirebasePublicCerts(true);
+    publicCert = certs[header.kid];
+  }
   if (!publicCert) {
     throw new Error('Matching Firebase signing certificate not found.');
   }
@@ -143,13 +149,49 @@ export async function verifyFirebaseIdToken(
   };
 }
 
+const PLACEHOLDER_ADMIN_EMAILS = new Set([
+  'your_google_email@gmail.com',
+  'your-email@gmail.com',
+  'admin@example.com',
+]);
+
+export function normalizeEmailValue(raw: string | undefined): string {
+  if (!raw) return '';
+  let cleaned = raw.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '').trim();
+  if (
+    (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+    (cleaned.startsWith("'") && cleaned.endsWith("'"))
+  ) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  return cleaned.toLowerCase();
+}
+
+export function resolveAdminEmail(options: {
+  explicitEmail?: string;
+  envEmail?: string;
+  fallbackEmail?: string;
+}): string {
+  const explicit = normalizeEmailValue(options.explicitEmail);
+  if (explicit && !PLACEHOLDER_ADMIN_EMAILS.has(explicit)) {
+    return explicit;
+  }
+
+  const fromEnv = normalizeEmailValue(options.envEmail);
+  if (fromEnv && !PLACEHOLDER_ADMIN_EMAILS.has(fromEnv)) {
+    return fromEnv;
+  }
+
+  return normalizeEmailValue(options.fallbackEmail);
+}
+
 export function isAuthorizedAdminEmail(
   email: string | undefined,
   emailVerified: boolean,
   configuredAdminEmail: string
 ): boolean {
-  const cleanAdminEmail = configuredAdminEmail.trim().toLowerCase();
-  const cleanUserEmail = (email ?? '').trim().toLowerCase();
+  const cleanAdminEmail = normalizeEmailValue(configuredAdminEmail);
+  const cleanUserEmail = normalizeEmailValue(email);
   return Boolean(
     emailVerified &&
       cleanAdminEmail &&
@@ -165,16 +207,31 @@ export interface AdminMiddlewareConfig {
 }
 
 export function createRequireAdminMiddleware(config: AdminMiddlewareConfig) {
+  const normalizedAdminEmail = normalizeEmailValue(config.adminEmail);
+
   return async (req: AdminRequest, res: Response, next: NextFunction) => {
+    if (!normalizedAdminEmail) {
+      res.status(500).json({
+        error:
+          'Server configuration error: ADMIN_EMAIL environment variable is missing or invalid.',
+      });
+      return;
+    }
+
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const bearerMatch =
+      typeof authHeader === 'string'
+        ? authHeader.match(/^\s*Bearer\s+(.+)\s*$/i)
+        : null;
+
+    if (!bearerMatch) {
       res.status(401).json({
         error: 'Authentication required. Please sign in with the authorized Google account.',
       });
       return;
     }
 
-    const token = authHeader.slice('Bearer '.length).trim();
+    const token = bearerMatch[1].trim();
     if (!token) {
       res.status(401).json({
         error: 'Authentication token is missing.',
@@ -189,8 +246,22 @@ export function createRequireAdminMiddleware(config: AdminMiddlewareConfig) {
           verifyFirebaseIdToken(t, { projectId }));
       const user = await verifier(token, config.projectId);
 
-      if (!isAuthorizedAdminEmail(user.email, user.emailVerified, config.adminEmail)) {
+      if (!user.emailVerified) {
         res.status(403).json({
+          code: 'EMAIL_NOT_VERIFIED',
+          error:
+            'Access Denied: Your Google account email address must be verified.',
+        });
+        return;
+      }
+
+      if (!isAuthorizedAdminEmail(user.email, user.emailVerified, normalizedAdminEmail)) {
+        console.warn('[auth] Admin access denied: email mismatch', {
+          uid: user.uid,
+          emailVerified: user.emailVerified,
+        });
+        res.status(403).json({
+          code: 'ADMIN_EMAIL_MISMATCH',
           error:
             'Access Denied: Only the authorized project owner Google account can perform admin actions.',
         });
@@ -202,6 +273,7 @@ export function createRequireAdminMiddleware(config: AdminMiddlewareConfig) {
       next();
     } catch (err) {
       res.status(401).json({
+        code: 'TOKEN_INVALID',
         error:
           err instanceof Error
             ? err.message

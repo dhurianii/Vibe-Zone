@@ -45,6 +45,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [serverAuthError, setServerAuthError] = useState<string | null>(null);
+  const [isServerError, setIsServerError] = useState(false);
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +60,22 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  const runServerVerification = async () => {
+    setAuthLoading(true);
+    setServerAuthError(null);
+    setIsServerError(false);
+    const verification = await verifyAdminAccess();
+    setIsAuthorized(verification.authorized);
+    if (!verification.authorized) {
+      setIsServerError(Boolean(verification.isServerError));
+      setServerAuthError(
+        verification.error ??
+          'Access Denied: Only the authorized project owner can access the Admin Panel.'
+      );
+    }
+    setAuthLoading(false);
+  };
+
   // Auth listener & cryptographic server-side admin verification
   useEffect(() => {
     let active = true;
@@ -67,6 +84,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
       setUser(nextUser);
       setAuthError(null);
       setServerAuthError(null);
+      setIsServerError(false);
 
       if (!nextUser) {
         setIsAuthorized(false);
@@ -80,6 +98,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
 
       setIsAuthorized(verification.authorized);
       if (!verification.authorized) {
+        setIsServerError(Boolean(verification.isServerError));
         setServerAuthError(
           verification.error ??
             'Access Denied: Only the authorized project owner can access the Admin Panel.'
@@ -96,7 +115,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
 
   // Redirect logged-out or unauthorized users away from protected /admin routes
   useEffect(() => {
-    if (authLoading || typeof window === 'undefined') return;
+    if (authLoading || typeof window === 'undefined' || isServerError) return;
     const decision = evaluateAdminRouteGate(window.location.pathname, {
       isAuthenticated: Boolean(user),
       isAuthorized,
@@ -104,7 +123,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     if (decision.redirectTo && window.location.pathname !== decision.redirectTo) {
       window.history.replaceState({}, '', decision.redirectTo);
     }
-  }, [authLoading, isAuthorized, user]);
+  }, [authLoading, isAuthorized, isServerError, user]);
 
   // Auto-sync starter catalog or Workout merge migration once when authorized admin visits
   useEffect(() => {
@@ -310,7 +329,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     );
   }
 
-  // Signed in but unauthorized -> Access Denied
+  // Signed in but unauthorized -> Access Denied (or verification service error)
   if (!isAuthorized) {
     return (
       <div className="max-w-md mx-auto py-12 sm:py-20">
@@ -324,11 +343,13 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
 
           <div>
             <h1 className="font-display text-2xl font-bold text-white tracking-tight">
-              Access Denied
+              {isServerError ? 'Admin Verification Failed' : 'Access Denied'}
             </h1>
             <p className="mt-2 text-sm text-slate-300 leading-relaxed">
               Signed in as <span className="font-medium text-white">{user.email}</span>.
-              Only the authorized project owner can access the Vibe Zone Admin Panel.
+              {isServerError
+                ? ' The server could not complete administrator verification.'
+                : ' Only the authorized project owner can access the Vibe Zone Admin Panel.'}
             </p>
             {serverAuthError && (
               <p className="mt-2.5 text-xs text-rose-300 leading-relaxed">
@@ -338,6 +359,15 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
+            {isServerError && (
+              <button
+                type="button"
+                onClick={runServerVerification}
+                className="flex-1 h-11 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center gap-2"
+              >
+                <span>Retry</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={handleSignOut}

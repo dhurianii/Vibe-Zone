@@ -34,6 +34,8 @@ const STORAGE_FAVOURITES = 'sona_favourites_v1';
 const STORAGE_RECENT = 'sona_recent_v1';
 const STORAGE_VOLUME = 'sona_volume_v1';
 
+export type RepeatMode = 'off' | 'all' | 'one';
+
 interface PlayerContextValue {
   tracks: Track[];
   moods: MoodCategory[];
@@ -49,6 +51,8 @@ interface PlayerContextValue {
   duration: number;
   volume: number;
   isMuted: boolean;
+  shuffleEnabled: boolean;
+  repeatMode: RepeatMode;
   errorMessage: string | null;
   isTheaterOpen: boolean;
   setTheaterOpen: (open: boolean) => void;
@@ -58,9 +62,15 @@ interface PlayerContextValue {
   favouriteTracks: Track[];
   activeMoodId: MoodId;
   setActiveMoodId: (moodId: MoodId) => void;
+  activeCategoryLabel: string | null;
+  setActiveCategoryLabel: (label: string | null) => void;
   languageFilter: LanguageFilter;
   setLanguageFilter: (language: LanguageFilter) => void;
-  playTrack: (track: Track, customQueue?: Track[]) => void;
+  playTrack: (
+    track: Track,
+    customQueue?: Track[],
+    categoryLabel?: string | null
+  ) => void;
   playMood: (moodId: MoodId, shuffle?: boolean) => void;
   togglePlayPause: () => void;
   nextTrack: () => void;
@@ -68,6 +78,10 @@ interface PlayerContextValue {
   seekTo: (seconds: number) => void;
   setVolume: (volume: number) => void;
   toggleMute: () => void;
+  toggleShuffle: () => void;
+  cycleRepeatMode: () => void;
+  addToQueue: (track: Track) => void;
+  playNextInQueue: (track: Track) => void;
   toggleFavourite: (trackId: string) => void;
   isFavourite: (trackId: string) => boolean;
   clearRecentHistory: () => void;
@@ -170,6 +184,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   );
 
   const [activeMoodId, setActiveMoodId] = useState<MoodId>('chill');
+  const [activeCategoryLabel, setActiveCategoryLabel] = useState<string | null>(
+    null
+  );
   const [languageFilter, setLanguageFilter] = useState<LanguageFilter>('All');
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [queue, setQueue] = useState<Track[]>(() =>
@@ -187,6 +204,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     }
   });
   const [isMuted, setIsMuted] = useState(false);
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
+  const [repeatMode, setRepeatMode] = useState<RepeatMode>('all');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isTheaterOpen, setTheaterOpen] = useState(false);
 
@@ -200,6 +219,9 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const queueRef = useRef(queue);
   const currentTrackRef = useRef(currentTrack);
   const tracksRef = useRef(tracks);
+  const shuffleRef = useRef(shuffleEnabled);
+  const repeatModeRef = useRef(repeatMode);
+  const activeCategoryLabelRef = useRef(activeCategoryLabel);
 
   useEffect(() => {
     queueRef.current = queue;
@@ -212,6 +234,18 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     tracksRef.current = tracks;
   }, [tracks]);
+
+  useEffect(() => {
+    shuffleRef.current = shuffleEnabled;
+  }, [shuffleEnabled]);
+
+  useEffect(() => {
+    repeatModeRef.current = repeatMode;
+  }, [repeatMode]);
+
+  useEffect(() => {
+    activeCategoryLabelRef.current = activeCategoryLabel;
+  }, [activeCategoryLabel]);
 
   // Subscribe to Firestore live catalog
   useEffect(() => {
@@ -284,7 +318,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const playTrack = useCallback(
-    (track: Track, customQueue?: Track[]) => {
+    (
+      track: Track,
+      customQueue?: Track[],
+      categoryLabel?: string | null
+    ) => {
       if (track.provider === 'pending') {
         setErrorMessage(
           `"${track.title}" is saved as Source Pending. Add a verified YouTube ID or authorized audio link in the Admin Panel to stream it.`
@@ -295,6 +333,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       setErrorMessage(null);
       setCurrentTrack(track);
       setActiveMoodId(track.moodId);
+      if (categoryLabel !== undefined) {
+        setActiveCategoryLabel(categoryLabel);
+      } else if (!customQueue) {
+        setActiveCategoryLabel(null);
+      }
       setCurrentTime(0);
       setDuration(track.durationSeconds);
 
@@ -327,20 +370,58 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     [getActiveProvider, recordRecentPlay]
   );
 
+  const pickNextTrackFromQueue = useCallback(
+    (fromNaturalEnd: boolean) => {
+      const activeQueue = queueRef.current.filter(
+        (t) => t.provider !== 'pending'
+      );
+      const active = currentTrackRef.current;
+      if (activeQueue.length === 0) return;
+
+      if (!active) {
+        playTrack(activeQueue[0], activeQueue, activeCategoryLabelRef.current);
+        return;
+      }
+
+      if (fromNaturalEnd && repeatModeRef.current === 'one') {
+        getActiveProvider()?.seekTo(0);
+        getActiveProvider()?.play();
+        setCurrentTime(0);
+        return;
+      }
+
+      if (shuffleRef.current && activeQueue.length > 1) {
+        const candidates = activeQueue.filter((t) => t.id !== active.id);
+        const randomPick =
+          candidates[Math.floor(Math.random() * candidates.length)] ??
+          activeQueue[0];
+        playTrack(randomPick, activeQueue, activeCategoryLabelRef.current);
+        return;
+      }
+
+      const idx = activeQueue.findIndex((t) => t.id === active.id);
+      if (
+        fromNaturalEnd &&
+        repeatModeRef.current === 'off' &&
+        idx === activeQueue.length - 1
+      ) {
+        setStatus('ended');
+        return;
+      }
+
+      const nextIdx = idx === -1 ? 0 : (idx + 1) % activeQueue.length;
+      playTrack(
+        activeQueue[nextIdx],
+        activeQueue,
+        activeCategoryLabelRef.current
+      );
+    },
+    [getActiveProvider, playTrack]
+  );
+
   const nextTrack = useCallback(() => {
-    const activeQueue = queueRef.current.filter((t) => t.provider !== 'pending');
-    const active = currentTrackRef.current;
-    if (activeQueue.length === 0) return;
-
-    if (!active) {
-      playTrack(activeQueue[0], activeQueue);
-      return;
-    }
-
-    const idx = activeQueue.findIndex((t) => t.id === active.id);
-    const nextIdx = idx === -1 ? 0 : (idx + 1) % activeQueue.length;
-    playTrack(activeQueue[nextIdx], activeQueue);
-  }, [playTrack]);
+    pickNextTrackFromQueue(false);
+  }, [pickNextTrackFromQueue]);
 
   const previousTrack = useCallback(() => {
     const activeQueue = queueRef.current.filter((t) => t.provider !== 'pending');
@@ -348,7 +429,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     if (activeQueue.length === 0) return;
 
     if (!active) {
-      playTrack(activeQueue[0], activeQueue);
+      playTrack(activeQueue[0], activeQueue, activeCategoryLabelRef.current);
       return;
     }
 
@@ -361,7 +442,11 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     const idx = activeQueue.findIndex((t) => t.id === active.id);
     const prevIdx =
       idx === -1 ? 0 : (idx - 1 + activeQueue.length) % activeQueue.length;
-    playTrack(activeQueue[prevIdx], activeQueue);
+    playTrack(
+      activeQueue[prevIdx],
+      activeQueue,
+      activeCategoryLabelRef.current
+    );
   }, [currentTime, getActiveProvider, playTrack]);
 
   // Mount both modular music providers once
@@ -400,7 +485,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
       },
       onTrackEnded: () => {
         if (activeProviderRef.current === providerType) {
-          nextTrack();
+          pickNextTrackFromQueue(true);
         }
       },
     });
@@ -441,7 +526,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
         ordered = ordered.sort(() => Math.random() - 0.5);
       }
       setActiveMoodId(moodId);
-      playTrack(ordered[0], ordered);
+      setActiveCategoryLabel(null);
+      playTrack(ordered[0], ordered, null);
     },
     [getMoodTracks, languageFilter, playTrack]
   );
@@ -508,6 +594,66 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const toggleShuffle = useCallback(() => {
+    setShuffleEnabled((prev) => !prev);
+  }, []);
+
+  const cycleRepeatMode = useCallback(() => {
+    setRepeatMode((prev) =>
+      prev === 'off' ? 'all' : prev === 'all' ? 'one' : 'off'
+    );
+  }, []);
+
+  const addToQueue = useCallback(
+    (track: Track) => {
+      if (track.provider === 'pending') {
+        setErrorMessage(
+          `"${track.title}" is saved as Source Pending and cannot be queued until verified.`
+        );
+        return;
+      }
+      if (!currentTrackRef.current) {
+        playTrack(track, [track]);
+        return;
+      }
+      setQueue((prev) => {
+        const filtered = prev.filter((item) => item.id !== track.id);
+        return [...filtered, track];
+      });
+    },
+    [playTrack]
+  );
+
+  const playNextInQueue = useCallback(
+    (track: Track) => {
+      if (track.provider === 'pending') {
+        setErrorMessage(
+          `"${track.title}" is saved as Source Pending and cannot be queued until verified.`
+        );
+        return;
+      }
+      const current = currentTrackRef.current;
+      if (!current) {
+        playTrack(track, [track]);
+        return;
+      }
+      if (current.id === track.id) return;
+      setQueue((prev) => {
+        const filtered = prev.filter((item) => item.id !== track.id);
+        const currentIdx = filtered.findIndex((item) => item.id === current.id);
+        if (currentIdx === -1) {
+          return [current, track, ...filtered];
+        }
+        return [
+          ...filtered.slice(0, currentIdx + 1),
+          track,
+          ...filtered.slice(currentIdx + 1),
+        ];
+      });
+    },
+    [playTrack]
+  );
+
   const toggleFavourite = useCallback((trackId: string) => {
     setFavourites((prev) =>
       prev.includes(trackId)
@@ -563,6 +709,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     duration,
     volume,
     isMuted,
+    shuffleEnabled,
+    repeatMode,
     errorMessage,
     isTheaterOpen,
     setTheaterOpen,
@@ -572,6 +720,8 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     favouriteTracks,
     activeMoodId,
     setActiveMoodId,
+    activeCategoryLabel,
+    setActiveCategoryLabel,
     languageFilter,
     setLanguageFilter,
     playTrack,
@@ -582,6 +732,10 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     seekTo,
     setVolume,
     toggleMute,
+    toggleShuffle,
+    cycleRepeatMode,
+    addToQueue,
+    playNextInQueue,
     toggleFavourite,
     isFavourite,
     clearRecentHistory,

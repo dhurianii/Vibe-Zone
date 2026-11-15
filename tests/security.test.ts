@@ -4,8 +4,13 @@ import fs from 'node:fs';
 import http from 'node:http';
 import path from 'node:path';
 import test from 'node:test';
+import vercelHandler from '../api/index.ts';
 import { createApiApp } from '../server.ts';
-import { verifyFirebaseIdToken } from '../server/auth.ts';
+import {
+  isAuthorizedAdminEmail,
+  resolveAdminEmail,
+  verifyFirebaseIdToken,
+} from '../server/auth.ts';
 import {
   evaluateAdminRouteGate,
   isProtectedAdminPath,
@@ -424,3 +429,73 @@ test('Frontend source never contains hardcoded admin email or secret keys', () =
     );
   }
 });
+
+test('Email normalization handles casing, whitespace, quotes, and placeholders safely', () => {
+  assert.equal(
+    isAuthorizedAdminEmail('  Owner@Example.COM ', true, '"owner@example.com"'),
+    true
+  );
+  assert.equal(
+    isAuthorizedAdminEmail('other@example.com', true, '"owner@example.com"'),
+    false
+  );
+  assert.equal(
+    resolveAdminEmail({
+      envEmail: '  "Owner@Example.com"  ',
+      fallbackEmail: 'fallback@example.com',
+    }),
+    'owner@example.com'
+  );
+  assert.equal(
+    resolveAdminEmail({
+      envEmail: '"YOUR_GOOGLE_EMAIL@gmail.com"',
+      fallbackEmail: 'fallback@example.com',
+    }),
+    'fallback@example.com'
+  );
+});
+
+test('Vercel serverless entrypoint routes /api/health and /api/admin/session cleanly', async () => {
+  const server = http.createServer((req, res) => vercelHandler(req, res));
+  await new Promise<void>((resolve) => {
+    server.listen(0, '127.0.0.1', () => resolve());
+  });
+  const address = server.address();
+  assert.ok(address && typeof address === 'object');
+  const baseUrl = `http://127.0.0.1:${address.port}`;
+
+  try {
+    const healthRes = await fetch(`${baseUrl}/api/health`);
+    assert.equal(healthRes.status, 200);
+    assert.match(
+      healthRes.headers.get('content-type') ?? '',
+      /application\/json/i
+    );
+
+    const rewrittenHealthRes = await fetch(
+      `${baseUrl}/api/index?__path=/api/health`
+    );
+    assert.equal(rewrittenHealthRes.status, 200);
+
+    const sessionRes = await fetch(`${baseUrl}/api/admin/session`);
+    assert.equal(sessionRes.status, 401);
+    assert.match(
+      sessionRes.headers.get('content-type') ?? '',
+      /application\/json/i
+    );
+
+    const rewrittenSessionRes = await fetch(
+      `${baseUrl}/api/index?__path=/api/admin/session`
+    );
+    assert.equal(rewrittenSessionRes.status, 401);
+    assert.match(
+      rewrittenSessionRes.headers.get('content-type') ?? '',
+      /application\/json/i
+    );
+  } finally {
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+  }
+});
+

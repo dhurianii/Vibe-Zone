@@ -102,20 +102,16 @@ function SonaShell() {
   };
 
   return (
-    <div
-      className={`relative min-h-screen text-slate-100 flex flex-col transition-colors duration-300 ${
-        activeSection === 'home' ? 'bg-[#101426]' : 'bg-[#07080B]'
-      }`}
-    >
-      {/* Subtle Ambient Mood Glow */}
+    <div className="relative min-h-screen bg-[#08090D] text-white flex flex-col">
+      {/* Subtle Neon Noir Ambient Glow */}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed inset-x-0 top-0 h-[420px] transition-opacity duration-500"
         style={{
           background:
             activeSection === 'home' && homeStage !== 'category'
-              ? 'radial-gradient(ellipse 70% 50% at 50% -10%, rgba(53, 107, 255, 0.28), transparent 75%)'
-              : `radial-gradient(ellipse 70% 50% at 50% -10%, ${activeMood.glowColor}, transparent 75%)`,
+              ? 'radial-gradient(ellipse 68% 48% at 50% -10%, rgba(157, 78, 221, 0.22), transparent 75%)'
+              : `radial-gradient(ellipse 68% 48% at 50% -10%, ${activeMood.glowColor}, transparent 75%)`,
         }}
       />
 
@@ -180,31 +176,33 @@ function SonaShell() {
 
       {/* Quiet Editorial Footer */}
       <footer
-        className={`relative z-10 border-t border-white/[0.06] ${
+        className={`relative z-10 border-t border-white/[0.07] ${
           currentTrack ? 'pb-[124px] md:pb-[104px]' : 'pb-[72px] md:pb-8'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-[#A1A1AA]">
           <div className="flex items-center gap-2">
-            <span className="font-display font-semibold text-slate-300">
-              Sona
+            <span className="font-display font-semibold text-white">
+              Vibe Zone
             </span>
             <span aria-hidden="true">·</span>
-            <span>Don&apos;t search for music. Find your vibe.</span>
+            <span>Find Your Vibe. Feel Your Moment.</span>
           </div>
-          <div className="flex items-center gap-3">
-            <p>
-              Streaming via Official YouTube IFrame Player API · No account required
-            </p>
-            <span aria-hidden="true">·</span>
-            <button
-              type="button"
-              onClick={() => handleNavigate('admin')}
-              className="text-slate-400 hover:text-indigo-300 transition-colors underline underline-offset-2"
-            >
-              Admin
-            </button>
-          </div>
+          {!(activeSection === 'home' && homeStage === 'experience') && (
+            <div className="flex items-center gap-3">
+              <p>
+                Streaming via Official YouTube IFrame Player API · No account required
+              </p>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                onClick={() => handleNavigate('admin')}
+                className="text-[#A1A1AA] hover:text-[#B6FF00] transition-colors underline underline-offset-2"
+              >
+                Admin
+              </button>
+            </div>
+          )}
         </div>
       </footer>
 

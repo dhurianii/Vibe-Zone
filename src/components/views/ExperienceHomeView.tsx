@@ -10,12 +10,12 @@ interface ExperienceHomeViewProps {
 }
 
 const FEEL_PARTICLES = [
-  { id: 1, x: '16%', y: '24%', size: 5, delay: 0, dur: 4.4 },
-  { id: 2, x: '34%', y: '18%', size: 4, delay: 0.6, dur: 5.1 },
-  { id: 3, x: '62%', y: '28%', size: 6, delay: 0.3, dur: 4.8 },
-  { id: 4, x: '78%', y: '20%', size: 4, delay: 0.9, dur: 4.2 },
-  { id: 5, x: '84%', y: '56%', size: 5, delay: 0.4, dur: 5.4 },
-  { id: 6, x: '24%', y: '54%', size: 4, delay: 1.1, dur: 4.6 },
+  { id: 1, x: '16%', y: '24%', size: 5, delay: 0, dur: 4.4, color: '#9D4EDD' },
+  { id: 2, x: '34%', y: '18%', size: 4, delay: 0.6, dur: 5.1, color: '#B6FF00' },
+  { id: 3, x: '62%', y: '28%', size: 6, delay: 0.3, dur: 4.8, color: '#C77DFF' },
+  { id: 4, x: '78%', y: '20%', size: 4, delay: 0.9, dur: 4.2, color: '#9D4EDD' },
+  { id: 5, x: '84%', y: '56%', size: 5, delay: 0.4, dur: 5.4, color: '#B6FF00' },
+  { id: 6, x: '24%', y: '54%', size: 4, delay: 1.1, dur: 4.6, color: '#C77DFF' },
 ];
 
 export function ExperienceHomeView({
@@ -44,7 +44,7 @@ export function ExperienceHomeView({
         >
           What&apos;s your vibe today?
         </h1>
-        <p className="mt-3 text-base sm:text-lg text-slate-300/90 leading-relaxed">
+        <p className="mt-3 text-base sm:text-lg text-[#A1A1AA] leading-relaxed">
           Choose how you want to experience music.
         </p>
       </motion.div>
@@ -66,20 +66,20 @@ export function ExperienceHomeView({
           }}
           whileHover={prefersReducedMotion ? undefined : { y: -4 }}
           whileTap={prefersReducedMotion ? undefined : { scale: 0.985 }}
-          className="group relative overflow-hidden rounded-3xl border border-white/[0.12] hover:border-[#356BFF]/60 bg-[#101426] text-left min-h-[300px] sm:min-h-[360px] lg:min-h-[410px] flex flex-col justify-end p-6 sm:p-8 lg:p-10 shadow-[0_24px_70px_-20px_rgba(53,107,255,0.28)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+          className="group relative overflow-hidden rounded-3xl border border-[#B6FF00]/25 hover:border-[#B6FF00]/75 bg-[#0F1118] text-left min-h-[300px] sm:min-h-[360px] lg:min-h-[410px] flex flex-col justify-end p-6 sm:p-8 lg:p-10 shadow-[0_24px_70px_-24px_rgba(182,255,0,0.18)] hover:shadow-[0_24px_75px_-18px_rgba(182,255,0,0.3)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
         >
-          {/* Background Artwork */}
+          {/* Background Artwork with Deep Black & Electric Purple Scrim */}
           <div className="absolute inset-0">
             <ArtworkImage
               src={activity.coverImage}
               alt="Activity Mode dynamic studio soundwaves"
-              className="w-full h-full object-cover opacity-65 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
+              className="w-full h-full object-cover opacity-50 group-hover:opacity-65 group-hover:scale-105 transition-all duration-500"
             />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(155deg, rgba(53, 107, 255, 0.32) 0%, rgba(16, 20, 38, 0.65) 45%, rgba(16, 20, 38, 0.96) 100%)',
+                  'linear-gradient(155deg, rgba(157, 78, 221, 0.24) 0%, rgba(8, 9, 13, 0.72) 48%, rgba(8, 9, 13, 0.97) 100%)',
               }}
             />
           </div>
@@ -87,15 +87,15 @@ export function ExperienceHomeView({
           {/* Subtle Animated Sound Waves */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-x-0 top-10 sm:top-14 opacity-55 group-hover:opacity-85 transition-opacity duration-300"
+            className="pointer-events-none absolute inset-x-0 top-10 sm:top-14 opacity-60 group-hover:opacity-90 transition-opacity duration-300"
           >
             <svg viewBox="0 0 600 120" fill="none" className="w-full h-24">
               <defs>
                 <linearGradient id="act-wave" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#356BFF" stopOpacity="0" />
-                  <stop offset="45%" stopColor="#356BFF" stopOpacity="0.85" />
-                  <stop offset="80%" stopColor="#A78BFA" stopOpacity="0.7" />
-                  <stop offset="100%" stopColor="#A78BFA" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#9D4EDD" stopOpacity="0" />
+                  <stop offset="45%" stopColor="#B6FF00" stopOpacity="0.85" />
+                  <stop offset="80%" stopColor="#9D4EDD" stopOpacity="0.7" />
+                  <stop offset="100%" stopColor="#9D4EDD" stopOpacity="0" />
                 </linearGradient>
               </defs>
               <motion.path
@@ -119,7 +119,7 @@ export function ExperienceHomeView({
                 stroke="url(#act-wave)"
                 strokeWidth="1.5"
                 strokeLinecap="round"
-                strokeOpacity="0.6"
+                strokeOpacity="0.55"
                 animate={
                   prefersReducedMotion
                     ? undefined
@@ -141,17 +141,17 @@ export function ExperienceHomeView({
                 <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
                   {activity.title}
                 </h2>
-                <p className="mt-2 text-sm sm:text-base text-slate-200/90 max-w-md leading-relaxed">
+                <p className="mt-2 text-sm sm:text-base text-[#A1A1AA] group-hover:text-white/90 transition-colors max-w-md leading-relaxed">
                   {activity.description}
                 </p>
               </div>
 
-              <span className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-[#356BFF] text-white shadow-lg shadow-[#356BFF]/35 group-hover:bg-[#4B7BFF] group-hover:translate-x-0.5 transition-all duration-200">
+              <span className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-[#B6FF00] text-[#08090D] shadow-[0_0_22px_-4px_rgba(182,255,0,0.55)] group-hover:bg-[#C6FF33] group-hover:translate-x-0.5 transition-all duration-200">
                 <ArrowRight className="w-5 h-5" />
               </span>
             </div>
 
-            <p className="pt-3 border-t border-white/[0.1] text-xs text-slate-300/80 truncate">
+            <p className="pt-3 border-t border-white/[0.09] text-xs text-[#A1A1AA] truncate">
               {activity.categoryPreview}
             </p>
           </div>
@@ -172,20 +172,20 @@ export function ExperienceHomeView({
           }}
           whileHover={prefersReducedMotion ? undefined : { y: -4 }}
           whileTap={prefersReducedMotion ? undefined : { scale: 0.985 }}
-          className="group relative overflow-hidden rounded-3xl border border-white/[0.12] hover:border-[#A78BFA]/60 bg-[#101426] text-left min-h-[300px] sm:min-h-[360px] lg:min-h-[410px] flex flex-col justify-end p-6 sm:p-8 lg:p-10 shadow-[0_24px_70px_-20px_rgba(167,139,250,0.24)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#A78BFA]"
+          className="group relative overflow-hidden rounded-3xl border border-[#9D4EDD]/30 hover:border-[#9D4EDD]/80 bg-[#0F1118] text-left min-h-[300px] sm:min-h-[360px] lg:min-h-[410px] flex flex-col justify-end p-6 sm:p-8 lg:p-10 shadow-[0_24px_70px_-24px_rgba(157,78,221,0.24)] hover:shadow-[0_24px_75px_-18px_rgba(157,78,221,0.38)] transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9D4EDD]"
         >
           {/* Background Artwork */}
           <div className="absolute inset-0">
             <ArtworkImage
               src={feel.coverImage}
               alt="Feel Mode calm atmospheric light veils"
-              className="w-full h-full object-cover opacity-65 group-hover:opacity-80 group-hover:scale-105 transition-all duration-500"
+              className="w-full h-full object-cover opacity-50 group-hover:opacity-65 group-hover:scale-105 transition-all duration-500"
             />
             <div
               className="absolute inset-0"
               style={{
                 background:
-                  'linear-gradient(155deg, rgba(167, 139, 250, 0.28) 0%, rgba(16, 20, 38, 0.62) 45%, rgba(16, 20, 38, 0.96) 100%)',
+                  'linear-gradient(155deg, rgba(157, 78, 221, 0.3) 0%, rgba(8, 9, 13, 0.72) 48%, rgba(8, 9, 13, 0.97) 100%)',
               }}
             />
           </div>
@@ -199,13 +199,14 @@ export function ExperienceHomeView({
               {FEEL_PARTICLES.map((p) => (
                 <motion.span
                   key={p.id}
-                  className="absolute rounded-full bg-[#A78BFA]"
+                  className="absolute rounded-full"
                   style={{
                     left: p.x,
                     top: p.y,
                     width: p.size,
                     height: p.size,
-                    boxShadow: '0 0 12px rgba(167, 139, 250, 0.85)',
+                    backgroundColor: p.color,
+                    boxShadow: `0 0 12px ${p.color}`,
                     willChange: 'transform, opacity',
                   }}
                   animate={{
@@ -231,17 +232,17 @@ export function ExperienceHomeView({
                 <h2 className="font-display text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-tight">
                   {feel.title}
                 </h2>
-                <p className="mt-2 text-sm sm:text-base text-slate-200/90 max-w-md leading-relaxed">
+                <p className="mt-2 text-sm sm:text-base text-[#A1A1AA] group-hover:text-white/90 transition-colors max-w-md leading-relaxed">
                   {feel.description}
                 </p>
               </div>
 
-              <span className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-gradient-to-br from-[#356BFF] to-[#A78BFA] text-white shadow-lg shadow-[#A78BFA]/30 group-hover:translate-x-0.5 transition-all duration-200">
+              <span className="w-12 h-12 rounded-2xl shrink-0 flex items-center justify-center bg-gradient-to-br from-[#9D4EDD] to-[#B6FF00] text-[#08090D] shadow-[0_0_24px_-4px_rgba(157,78,221,0.5)] group-hover:translate-x-0.5 transition-all duration-200">
                 <ArrowRight className="w-5 h-5" />
               </span>
             </div>
 
-            <p className="pt-3 border-t border-white/[0.1] text-xs text-slate-300/80 truncate">
+            <p className="pt-3 border-t border-white/[0.09] text-xs text-[#A1A1AA] truncate">
               {feel.categoryPreview}
             </p>
           </div>
@@ -249,11 +250,11 @@ export function ExperienceHomeView({
       </div>
 
       {/* Quiet Secondary Access to All Channels */}
-      <div className="mt-7 flex items-center justify-between gap-4 text-xs sm:text-sm text-slate-400">
+      <div className="mt-7 flex items-center justify-between gap-4 text-xs sm:text-sm text-[#A1A1AA]">
         <button
           type="button"
           onClick={() => onNavigate('explore')}
-          className="inline-flex items-center gap-2 py-2 text-slate-300 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] rounded-lg"
+          className="inline-flex items-center gap-2 py-2 text-[#A1A1AA] hover:text-[#B6FF00] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] rounded-lg"
         >
           <span>Browse all mood channels</span>
           <ArrowRight className="w-4 h-4" />

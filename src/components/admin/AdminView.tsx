@@ -269,8 +269,8 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   if (authLoading) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
-        <div className="flex items-center gap-3 text-slate-300 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-indigo-400" />
+        <div className="flex items-center gap-3 text-[#A1A1AA] text-sm">
+          <Loader2 className="w-5 h-5 animate-spin text-[#B6FF00]" />
           <span>Verifying administrator session...</span>
         </div>
       </div>
@@ -281,8 +281,8 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   if (!user) {
     return (
       <div className="max-w-md mx-auto py-12 sm:py-20">
-        <div className="rounded-2xl border border-white/[0.1] bg-[#0D1018] p-6 sm:p-8 space-y-6">
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-indigo-300">
+        <div className="rounded-2xl border border-[#9D4EDD]/30 bg-[#0F1118] p-6 sm:p-8 space-y-6">
+          <div className="w-12 h-12 rounded-2xl bg-[#9D4EDD]/15 border border-[#9D4EDD]/40 flex items-center justify-center text-[#C77DFF]">
             <ShieldCheck className="w-6 h-6" />
           </div>
 
@@ -290,7 +290,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             <h1 className="font-display text-2xl font-bold text-white tracking-tight">
               Admin Sign In
             </h1>
-            <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+            <p className="mt-2 text-sm text-[#A1A1AA] leading-relaxed">
               Sign in with an authorized administrator Google account to manage Vibe Zone&apos;s songs, moods, languages, and uploaded media.
             </p>
           </div>
@@ -309,7 +309,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               type="button"
               onClick={handleGoogleSignIn}
               disabled={isSigningIn}
-              className="w-full h-12 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 flex items-center justify-center gap-2 transition-all disabled:opacity-60"
+              className="w-full h-12 rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:brightness-110 flex items-center justify-center gap-2 transition-all disabled:opacity-60 shadow-[0_6px_22px_rgba(182,255,0,0.22)]"
             >
               {isSigningIn && <Loader2 className="w-4 h-4 animate-spin" />}
               <span>Sign in with Google</span>
@@ -318,7 +318,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             <button
               type="button"
               onClick={onExitAdmin}
-              className="w-full h-11 rounded-xl text-sm font-medium text-slate-300 hover:text-white border border-white/[0.1] bg-white/[0.03] hover:bg-white/[0.06] flex items-center justify-center gap-2 transition-colors"
+              className="w-full h-11 rounded-xl text-sm font-medium text-[#A1A1AA] hover:text-white border border-white/[0.1] bg-[#08090D] hover:border-[#9D4EDD]/50 flex items-center justify-center gap-2 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Return to Vibe Zone</span>
@@ -335,7 +335,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
       <div className="max-w-md mx-auto py-12 sm:py-20">
         <div
           role="alert"
-          className="rounded-2xl border border-rose-500/30 bg-[#0D1018] p-6 sm:p-8 space-y-6"
+          className="rounded-2xl border border-rose-500/30 bg-[#0F1118] p-6 sm:p-8 space-y-6"
         >
           <div className="w-12 h-12 rounded-2xl bg-rose-500/15 border border-rose-400/30 flex items-center justify-center text-rose-300">
             <ShieldAlert className="w-6 h-6" />
@@ -345,7 +345,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             <h1 className="font-display text-2xl font-bold text-white tracking-tight">
               {isServerError ? 'Admin Verification Failed' : 'Access Denied'}
             </h1>
-            <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+            <p className="mt-2 text-sm text-[#A1A1AA] leading-relaxed">
               Signed in as <span className="font-medium text-white">{user.email}</span>.
               {isServerError
                 ? ' The server could not complete administrator verification.'
@@ -363,7 +363,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               <button
                 type="button"
                 onClick={runServerVerification}
-                className="flex-1 h-11 rounded-xl text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-500 flex items-center justify-center gap-2"
+                className="flex-1 h-11 rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:brightness-110 flex items-center justify-center gap-2"
               >
                 <span>Retry</span>
               </button>
@@ -379,7 +379,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             <button
               type="button"
               onClick={onExitAdmin}
-              className="flex-1 h-11 rounded-xl text-sm font-medium text-slate-300 hover:text-white border border-white/[0.1] flex items-center justify-center gap-2"
+              className="flex-1 h-11 rounded-xl text-sm font-medium text-[#A1A1AA] hover:text-white border border-white/[0.1] flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Return to Vibe Zone</span>
@@ -395,13 +395,13 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
       {/* Admin Header */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <p className="text-xs font-medium text-indigo-400">
+          <p className="text-xs font-medium text-[#C77DFF]">
             Protected Admin Route · {user.email}
           </p>
           <h1 className="mt-1 font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             Admin Studio
           </h1>
-          <p className="mt-1.5 text-sm text-slate-400">
+          <p className="mt-1.5 text-sm text-[#A1A1AA]">
             Manage songs, moods, languages, and authorized media across the live application.
           </p>
         </div>
@@ -412,7 +412,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               type="button"
               onClick={handleManualSync}
               disabled={isSyncing}
-              className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-xs sm:text-sm font-medium text-indigo-200 border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-xs sm:text-sm font-medium text-[#C77DFF] border border-[#9D4EDD]/40 bg-[#9D4EDD]/15 hover:bg-[#9D4EDD]/25 whitespace-nowrap"
             >
               {isSyncing ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -473,32 +473,32 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0D1018] p-5">
-          <p className="text-xs font-medium text-slate-400">Total Songs</p>
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0F1118] p-5">
+          <p className="text-xs font-medium text-[#A1A1AA]">Total Songs</p>
           <p className="mt-2 font-display text-3xl font-bold text-white tabular-nums">
             {tracks.length}
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-[#B6FF00]">
             {hasCloudCatalog ? 'Live in Firestore' : 'Starter catalog'}
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0D1018] p-5">
-          <p className="text-xs font-medium text-slate-400">Mood Categories</p>
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0F1118] p-5">
+          <p className="text-xs font-medium text-[#A1A1AA]">Mood Categories</p>
           <p className="mt-2 font-display text-3xl font-bold text-white tabular-nums">
             {moods.length}
           </p>
-          <p className="mt-1 text-xs text-slate-400">
+          <p className="mt-1 text-xs text-[#A1A1AA]">
             Active mood discovery channels
           </p>
         </div>
 
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0D1018] p-5">
-          <p className="text-xs font-medium text-slate-400">Languages</p>
+        <div className="rounded-2xl border border-white/[0.08] bg-[#0F1118] p-5">
+          <p className="text-xs font-medium text-[#A1A1AA]">Languages</p>
           <p className="mt-2 font-display text-3xl font-bold text-white tabular-nums">
             {languages.length}
           </p>
-          <p className="mt-1 text-xs text-slate-400 truncate">
+          <p className="mt-1 text-xs text-[#A1A1AA] truncate">
             {languages.join(' · ')}
           </p>
         </div>
@@ -508,14 +508,14 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         <div className="flex flex-col sm:flex-row flex-1 gap-3">
           <div className="relative flex-1 min-w-0">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-[#A1A1AA] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search songs by title, artist, album, or ID..."
               aria-label="Filter songs"
-              className="w-full h-11 pl-10 pr-4 rounded-xl border border-white/[0.1] bg-[#0D1018] text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500"
+              className="w-full h-11 pl-10 pr-4 rounded-xl border border-white/[0.1] bg-[#0F1118] text-sm text-white placeholder:text-[#A1A1AA]/60 focus:outline-none focus:border-[#B6FF00]"
             />
           </div>
 
@@ -523,7 +523,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             aria-label="Filter by mood"
             value={moodFilter}
             onChange={(e) => setMoodFilter(e.target.value)}
-            className="h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#0D1018] text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            className="h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#0F1118] text-sm text-white focus:outline-none focus:border-[#B6FF00]"
           >
             <option value="all">All Moods</option>
             {moods.map((m) => (
@@ -537,7 +537,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             aria-label="Filter by language"
             value={langFilter}
             onChange={(e) => setLangFilter(e.target.value)}
-            className="h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#0D1018] text-sm text-slate-200 focus:outline-none focus:border-indigo-500"
+            className="h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#0F1118] text-sm text-white focus:outline-none focus:border-[#B6FF00]"
           >
             <option value="all">All Languages</option>
             {languages.map((lang) => (
@@ -554,7 +554,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             setEditingTrack(null);
             setIsFormOpen(true);
           }}
-          className="inline-flex items-center justify-center gap-2 px-5 h-11 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 whitespace-nowrap shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-5 h-11 rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:brightness-110 whitespace-nowrap shrink-0 shadow-[0_6px_20px_rgba(182,255,0,0.22)]"
         >
           <Plus className="w-4 h-4" />
           <span>Add New Song</span>
@@ -562,8 +562,8 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
       </div>
 
       {/* Song Management Table */}
-      <div className="rounded-2xl border border-white/[0.08] bg-[#0B0E16] overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-white/[0.07] flex items-center justify-between text-xs text-slate-400">
+      <div className="rounded-2xl border border-white/[0.08] bg-[#0F1118] overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-white/[0.07] flex items-center justify-between text-xs text-[#A1A1AA]">
           <span className="tabular-nums">
             Showing {filteredSongs.length} of {tracks.length} songs
           </span>
@@ -574,7 +574,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             <p className="font-display text-base font-semibold text-white">
               No songs match your filters
             </p>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-[#A1A1AA]">
               Adjust your search or click &ldquo;Add New Song&rdquo; to publish a track.
             </p>
           </div>
@@ -582,7 +582,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/[0.07] text-xs font-medium text-slate-400">
+                <tr className="border-b border-white/[0.07] text-xs font-medium text-[#A1A1AA]">
                   <th className="py-3.5 px-5">Track</th>
                   <th className="py-3.5 px-4">Artist</th>
                   <th className="py-3.5 px-4">Mood</th>
@@ -602,7 +602,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
                     >
                       <td className="py-3 px-5">
                         <div className="flex items-center gap-3 min-w-[200px]">
-                          <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-white/[0.08] bg-[#141724]">
+                          <div className="w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-white/[0.08] bg-[#08090D]">
                             <ArtworkImage
                               src={track.artworkUrl}
                               fallbackSrc={track.fallbackArtwork}
@@ -710,7 +710,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
           aria-labelledby="delete-confirm-title"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
         >
-          <div className="w-full max-w-md rounded-2xl border border-white/[0.1] bg-[#0D1018] p-6 space-y-5 shadow-2xl">
+          <div className="w-full max-w-md rounded-2xl border border-[#9D4EDD]/30 bg-[#0F1118] p-6 space-y-5 shadow-2xl">
             <div>
               <h2
                 id="delete-confirm-title"

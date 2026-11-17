@@ -64,7 +64,7 @@ export function PlayerBar() {
       {errorMessage && !isTheaterOpen && (
         <div
           role="alert"
-          className="fixed bottom-[118px] md:bottom-[94px] left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40 rounded-2xl border border-amber-500/35 bg-[#101426]/95 backdrop-blur-xl px-4 py-3 shadow-2xl flex items-start gap-3"
+          className="fixed bottom-[118px] md:bottom-[94px] left-4 right-4 md:left-auto md:right-6 md:max-w-md z-40 rounded-2xl border border-amber-500/35 bg-[#0F1118]/95 backdrop-blur-xl px-4 py-3 shadow-2xl flex items-start gap-3"
         >
           <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1">
@@ -78,7 +78,7 @@ export function PlayerBar() {
                   clearError();
                   nextTrack();
                 }}
-                className="text-xs font-semibold text-[#A78BFA] hover:text-white underline underline-offset-2"
+                className="text-xs font-semibold text-[#B6FF00] hover:text-white underline underline-offset-2"
               >
                 Skip to next track
               </button>
@@ -87,7 +87,7 @@ export function PlayerBar() {
                   href={`https://www.youtube.com/watch?v=${currentTrack.providerTrackId}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-slate-300 hover:text-white inline-flex items-center gap-1"
+                  className="text-xs text-[#A1A1AA] hover:text-white inline-flex items-center gap-1"
                 >
                   <span>Watch on YouTube</span>
                   <ExternalLink className="w-3 h-3" />
@@ -99,7 +99,7 @@ export function PlayerBar() {
             type="button"
             onClick={clearError}
             aria-label="Dismiss playback notice"
-            className="p-1 text-slate-400 hover:text-white rounded-lg"
+            className="p-1 text-[#A1A1AA] hover:text-white rounded-lg"
           >
             <X className="w-4 h-4" />
           </button>
@@ -107,11 +107,11 @@ export function PlayerBar() {
       )}
 
       {/* Mobile Persistent Mini-Player (sits directly above 52px mobile bottom nav) */}
-      <div className="md:hidden fixed bottom-[52px] left-0 right-0 z-40 bg-[#101426]/95 backdrop-blur-2xl border-t border-white/[0.1] shadow-[0_-10px_30px_rgba(8,10,22,0.75)]">
+      <div className="md:hidden fixed bottom-[52px] left-0 right-0 z-40 bg-[#08090D]/95 backdrop-blur-2xl border-t border-white/[0.1] shadow-[0_-10px_30px_rgba(0,0,0,0.85)]">
         {/* Sleek Top Progress Indicator */}
         <div className="h-[3px] w-full bg-white/[0.08]">
           <div
-            className="h-full bg-gradient-to-r from-[#356BFF] to-[#A78BFA] transition-[width] duration-200"
+            className="h-full bg-gradient-to-r from-[#9D4EDD] to-[#B6FF00] transition-[width] duration-200"
             style={{
               width: currentTrack.isLive ? '100%' : `${progressPercent}%`,
             }}
@@ -123,12 +123,12 @@ export function PlayerBar() {
             type="button"
             onClick={() => setTheaterOpen(true)}
             aria-label={`Open full player for ${currentTrack.title}`}
-            className="flex items-center gap-3 min-w-0 flex-1 text-left py-1 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+            className="flex items-center gap-3 min-w-0 flex-1 text-left py-1 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
           >
             <div
               className={`w-10 h-10 rounded-xl overflow-hidden shrink-0 border ${
                 isPlaying
-                  ? 'border-[#356BFF]/70 shadow-sm shadow-[#356BFF]/30'
+                  ? 'border-[#B6FF00]/70 shadow-sm shadow-[#B6FF00]/25'
                   : 'border-white/[0.12]'
               }`}
             >
@@ -144,12 +144,12 @@ export function PlayerBar() {
               <p className="text-[13px] font-semibold text-white truncate">
                 {currentTrack.title}
               </p>
-              <p className="text-[11px] text-slate-300/80 truncate">
+              <p className="text-[11px] text-[#A1A1AA] truncate">
                 {currentTrack.artist}
               </p>
             </div>
 
-            <ChevronUp className="w-4 h-4 text-[#A78BFA] shrink-0" />
+            <ChevronUp className="w-4 h-4 text-[#B6FF00] shrink-0" />
           </button>
 
           <div className="flex items-center gap-0.5 shrink-0">
@@ -157,7 +157,7 @@ export function PlayerBar() {
               type="button"
               onClick={togglePlayPause}
               aria-label={isPlaying ? 'Pause' : 'Play'}
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-gradient-to-r from-[#356BFF] to-[#A78BFA] text-white shadow-md shadow-[#356BFF]/25 active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-[#B6FF00] text-[#08090D] shadow-md shadow-[#B6FF00]/25 active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               {isLoading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -172,7 +172,7 @@ export function PlayerBar() {
               type="button"
               onClick={nextTrack}
               aria-label="Next track"
-              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-slate-200 hover:text-white active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+              className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-[#A1A1AA] hover:text-white active:scale-95 transition-transform focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
             >
               <SkipForward className="w-4 h-4 fill-current" />
             </button>
@@ -183,12 +183,12 @@ export function PlayerBar() {
       {/* Desktop & Tablet Persistent Mini-Player */}
       <footer
         aria-label="Music mini player"
-        className="hidden md:block fixed bottom-0 left-0 right-0 z-40 h-[84px] border-t border-white/[0.1] bg-[#101426]/95 backdrop-blur-2xl shadow-[0_-12px_40px_rgba(6,8,18,0.8)]"
+        className="hidden md:block fixed bottom-0 left-0 right-0 z-40 h-[84px] border-t border-white/[0.1] bg-[#08090D]/95 backdrop-blur-2xl shadow-[0_-12px_40px_rgba(0,0,0,0.85)]"
       >
         {/* Subtle Full-Width Top Progress Track */}
         <div className="h-[2px] w-full bg-white/[0.06]">
           <div
-            className="h-full bg-gradient-to-r from-[#356BFF] to-[#A78BFA] transition-[width] duration-200"
+            className="h-full bg-gradient-to-r from-[#9D4EDD] to-[#B6FF00] transition-[width] duration-200"
             style={{
               width: currentTrack.isLive ? '100%' : `${progressPercent}%`,
             }}
@@ -202,9 +202,9 @@ export function PlayerBar() {
               type="button"
               onClick={() => setTheaterOpen(true)}
               aria-label={`Expand music player for ${currentTrack.title}`}
-              className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+              className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] ${
                 isPlaying
-                  ? 'border-[#356BFF]/75 shadow-md shadow-[#356BFF]/25'
+                  ? 'border-[#B6FF00]/75 shadow-md shadow-[#B6FF00]/20'
                   : 'border-white/[0.12]'
               }`}
             >
@@ -219,12 +219,12 @@ export function PlayerBar() {
             <button
               type="button"
               onClick={() => setTheaterOpen(true)}
-              className="min-w-0 flex-1 text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] rounded-lg py-1"
+              className="min-w-0 flex-1 text-left group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] rounded-lg py-1"
             >
-              <p className="text-sm font-semibold text-white group-hover:text-[#A78BFA] transition-colors truncate">
+              <p className="text-sm font-semibold text-white group-hover:text-[#B6FF00] transition-colors truncate">
                 {currentTrack.title}
               </p>
-              <p className="text-xs text-slate-300/80 truncate mt-0.5">
+              <p className="text-xs text-[#A1A1AA] truncate mt-0.5">
                 {currentTrack.artist} · {categoryDisplay}
               </p>
             </button>
@@ -235,8 +235,8 @@ export function PlayerBar() {
               aria-label={fav ? 'Remove from favourites' : 'Save to favourites'}
               className={`min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl transition-colors ${
                 fav
-                  ? 'text-[#A78BFA] hover:text-white'
-                  : 'text-slate-400 hover:text-white'
+                  ? 'text-[#B6FF00] hover:text-white'
+                  : 'text-[#A1A1AA] hover:text-white'
               }`}
             >
               <Heart className={`w-4 h-4 ${fav ? 'fill-current' : ''}`} />
@@ -250,7 +250,7 @@ export function PlayerBar() {
                 type="button"
                 onClick={previousTrack}
                 aria-label="Previous track"
-                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full text-slate-300 hover:text-white hover:bg-white/[0.08] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full text-[#A1A1AA] hover:text-white hover:bg-white/[0.08] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
               >
                 <SkipBack className="w-4 h-4 fill-current" />
               </button>
@@ -259,7 +259,7 @@ export function PlayerBar() {
                 type="button"
                 onClick={togglePlayPause}
                 aria-label={isPlaying ? 'Pause' : 'Play'}
-                className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-r from-[#356BFF] to-[#A78BFA] hover:brightness-110 text-white shadow-lg shadow-[#356BFF]/30 transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="w-10 h-10 rounded-full flex items-center justify-center bg-[#B6FF00] hover:brightness-110 text-[#08090D] shadow-[0_6px_22px_rgba(182,255,0,0.3)] transition-transform active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -274,19 +274,19 @@ export function PlayerBar() {
                 type="button"
                 onClick={nextTrack}
                 aria-label="Next track"
-                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full text-slate-300 hover:text-white hover:bg-white/[0.08] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+                className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full text-[#A1A1AA] hover:text-white hover:bg-white/[0.08] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
               >
                 <SkipForward className="w-4 h-4 fill-current" />
               </button>
             </div>
 
             <div className="w-full max-w-md flex items-center gap-2.5">
-              <span className="font-mono text-[11px] text-slate-300/80 tabular-nums w-11 text-right shrink-0">
+              <span className="font-mono text-[11px] text-[#A1A1AA] tabular-nums w-11 text-right shrink-0">
                 {currentTrack.isLive ? 'LIVE' : formatTime(currentTime)}
               </span>
 
               {currentTrack.isLive ? (
-                <div className="flex-1 h-1 rounded-full bg-gradient-to-r from-[#356BFF] via-[#A78BFA] to-[#356BFF] opacity-90" />
+                <div className="flex-1 h-1 rounded-full bg-gradient-to-r from-[#9D4EDD] via-[#B6FF00] to-[#9D4EDD] opacity-90" />
               ) : (
                 <input
                   type="range"
@@ -297,13 +297,13 @@ export function PlayerBar() {
                   value={Math.min(currentTime, effectiveDuration || 100)}
                   onChange={(e) => seekTo(Number(e.target.value))}
                   style={{
-                    background: `linear-gradient(to right, #356BFF 0%, #A78BFA ${progressPercent}%, rgba(255,255,255,0.14) ${progressPercent}%, rgba(255,255,255,0.14) 100%)`,
+                    background: `linear-gradient(to right, #9D4EDD 0%, #B6FF00 ${progressPercent}%, rgba(255,255,255,0.14) ${progressPercent}%, rgba(255,255,255,0.14) 100%)`,
                   }}
                   className="sona-range flex-1 h-1 rounded-full"
                 />
               )}
 
-              <span className="font-mono text-[11px] text-slate-300/80 tabular-nums w-11 shrink-0">
+              <span className="font-mono text-[11px] text-[#A1A1AA] tabular-nums w-11 shrink-0">
                 {currentTrack.isLive
                   ? 'STREAM'
                   : formatTime(effectiveDuration)}
@@ -317,7 +317,7 @@ export function PlayerBar() {
               type="button"
               onClick={toggleMute}
               aria-label={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
-              className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-300 hover:text-white transition-colors"
+              className="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-[#A1A1AA] hover:text-white transition-colors"
             >
               {isMuted || volume === 0 ? (
                 <VolumeX className="w-4 h-4" />
@@ -334,7 +334,7 @@ export function PlayerBar() {
               value={isMuted ? 0 : volume}
               onChange={(e) => setVolume(Number(e.target.value))}
               style={{
-                background: `linear-gradient(to right, #356BFF 0%, #A78BFA ${
+                background: `linear-gradient(to right, #9D4EDD 0%, #B6FF00 ${
                   isMuted ? 0 : volume
                 }%, rgba(255,255,255,0.14) ${
                   isMuted ? 0 : volume
@@ -347,7 +347,7 @@ export function PlayerBar() {
               type="button"
               onClick={() => setTheaterOpen(true)}
               aria-label="Open expanded music player"
-              className="ml-2 inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-xl text-xs font-medium border border-white/[0.12] bg-white/[0.06] text-white hover:bg-[#356BFF]/25 hover:border-[#356BFF]/60 transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+              className="ml-2 inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[40px] rounded-xl text-xs font-medium border border-[#9D4EDD]/40 bg-[#0F1118] text-white hover:border-[#B6FF00]/70 hover:text-[#B6FF00] transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
             >
               <Maximize2 className="w-3.5 h-3.5" />
               <span>Player</span>

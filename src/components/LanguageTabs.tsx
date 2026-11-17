@@ -17,7 +17,7 @@ export function LanguageTabs({ value, onChange }: LanguageTabsProps) {
     <div
       role="group"
       aria-label="Filter by language"
-      className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl border border-white/[0.08] bg-[#0D1018]"
+      className="inline-flex flex-wrap items-center gap-1 p-1 rounded-xl border border-white/[0.09] bg-[#0F1118]"
     >
       {options.map((lang) => {
         const active = value === lang.id;
@@ -27,10 +27,10 @@ export function LanguageTabs({ value, onChange }: LanguageTabsProps) {
             type="button"
             onClick={() => onChange(lang.id)}
             aria-pressed={active}
-            className={`px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+            className={`px-3 py-1.5 min-h-[34px] rounded-lg text-xs font-semibold transition-all whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] ${
               active
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-100'
+                ? 'bg-[#B6FF00] text-[#08090D] shadow-[0_0_14px_-3px_rgba(182,255,0,0.45)]'
+                : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.05]'
             }`}
           >
             {lang.label}

@@ -115,23 +115,23 @@ export function SwipeDeckView({
         <button
           type="button"
           onClick={onBackToModes}
-          className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[44px] rounded-xl text-sm font-medium text-slate-300 hover:text-white border border-white/[0.1] bg-[#101426]/90 hover:bg-white/[0.06] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+          className="inline-flex items-center gap-2 px-3.5 py-2 min-h-[44px] rounded-xl text-sm font-medium text-[#A1A1AA] hover:text-white border border-white/[0.1] hover:border-[#B6FF00]/40 bg-[#0F1118]/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Experiences</span>
         </button>
 
         <div className="text-center">
-          <p className="text-xs font-medium text-[#A78BFA]">{modeMeta.title}</p>
-          <p className="text-xs text-slate-400 hidden sm:block">
+          <p className="text-xs font-semibold text-[#C77DFF]">{modeMeta.title}</p>
+          <p className="text-xs text-[#A1A1AA] hidden sm:block">
             Swipe or tap a card to begin
           </p>
         </div>
 
-        <div className="min-w-[72px] text-right font-mono text-sm font-medium text-slate-200 tabular-nums">
-          <span className="text-white">{formattedIndex}</span>
-          <span className="text-slate-500 mx-1">/</span>
-          <span className="text-slate-400">{formattedTotal}</span>
+        <div className="min-w-[72px] text-right font-mono text-sm font-medium tabular-nums">
+          <span className="text-[#B6FF00]">{formattedIndex}</span>
+          <span className="text-[#A1A1AA]/60 mx-1">/</span>
+          <span className="text-[#A1A1AA]">{formattedTotal}</span>
         </div>
       </div>
 
@@ -157,7 +157,6 @@ export function SwipeDeckView({
 
             const trackCount = getExperienceTracks(category, tracks, 'All').length;
 
-            // 3D stacked card depth transforms
             let targetX = 0;
             let targetY = 0;
             let targetScale = 1;
@@ -256,10 +255,10 @@ export function SwipeDeckView({
                     onSelectCategory(category);
                   }
                 }}
-                className={`absolute inset-0 rounded-3xl overflow-hidden bg-[#101426] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                className={`absolute inset-0 rounded-3xl overflow-hidden bg-[#0F1118] select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] ${
                   isForeground
-                    ? 'cursor-grab active:cursor-grabbing border border-white/20 shadow-[0_28px_70px_-15px_rgba(16,20,38,0.95),0_0_40px_-10px_rgba(53,107,255,0.4)]'
-                    : 'cursor-pointer border border-white/10 shadow-2xl'
+                    ? 'cursor-grab active:cursor-grabbing border border-[#B6FF00]/45 shadow-[0_28px_70px_-15px_rgba(8,9,13,0.95),0_0_38px_-12px_rgba(182,255,0,0.25)]'
+                    : 'cursor-pointer border border-[#9D4EDD]/25 shadow-2xl'
                 }`}
               >
                 {/* Card Artwork */}
@@ -272,18 +271,18 @@ export function SwipeDeckView({
                   <div
                     className="absolute inset-0"
                     style={{
-                      background: `linear-gradient(180deg, ${category.glowColor} 0%, rgba(16, 20, 38, 0.35) 38%, rgba(16, 20, 38, 0.95) 88%, #101426 100%)`,
+                      background: `linear-gradient(180deg, ${category.glowColor} 0%, rgba(8, 9, 13, 0.42) 38%, rgba(8, 9, 13, 0.96) 88%, #08090D 100%)`,
                     }}
                   />
                 </div>
 
                 {/* Top Subtle Index & Track Count */}
                 <div className="relative z-10 p-6 sm:p-7 h-full flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-xs font-medium text-slate-200/90">
-                    <span className="font-mono tabular-nums text-white/80">
+                  <div className="flex items-center justify-between text-xs font-medium text-[#A1A1AA]">
+                    <span className="font-mono tabular-nums text-[#B6FF00]">
                       {String(idx + 1).padStart(2, '0')}
                     </span>
-                    <span className="tabular-nums text-slate-200/85">
+                    <span className="tabular-nums text-white/85">
                       {trackCount} tracks
                     </span>
                   </div>
@@ -293,15 +292,15 @@ export function SwipeDeckView({
                     <h2 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
                       {category.title}
                     </h2>
-                    <p className="mt-2 text-sm sm:text-base text-slate-200/90 leading-relaxed">
+                    <p className="mt-2 text-sm sm:text-base text-[#A1A1AA] leading-relaxed">
                       {category.description}
                     </p>
 
-                    <div className="mt-5 pt-4 border-t border-white/[0.12] flex items-center justify-between text-xs sm:text-sm font-medium text-white">
-                      <span className="text-[#A78BFA]">
+                    <div className="mt-5 pt-4 border-t border-white/[0.1] flex items-center justify-between text-xs sm:text-sm font-medium text-white">
+                      <span className="text-[#C77DFF]">
                         {isForeground ? 'Tap card to listen' : 'Bring forward'}
                       </span>
-                      <span className="w-9 h-9 rounded-xl bg-gradient-to-r from-[#356BFF] to-[#A78BFA] flex items-center justify-center shadow-md shadow-[#356BFF]/30">
+                      <span className="w-9 h-9 rounded-xl bg-[#B6FF00] text-[#08090D] flex items-center justify-center shadow-[0_0_16px_-3px_rgba(182,255,0,0.5)]">
                         <ArrowRight className="w-4 h-4" />
                       </span>
                     </div>
@@ -320,7 +319,7 @@ export function SwipeDeckView({
             type="button"
             onClick={goPrev}
             aria-label="Previous category card"
-            className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/[0.12] bg-[#101426] text-slate-200 hover:text-white hover:border-[#356BFF]/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+            className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/[0.12] bg-[#0F1118] text-[#A1A1AA] hover:text-white hover:border-[#B6FF00]/55 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
           >
             <ChevronLeft className="w-5 h-5" />
           </button>
@@ -335,7 +334,7 @@ export function SwipeDeckView({
                 onClick={() => onIndexChange(idx)}
                 className={`h-2 rounded-full transition-all duration-200 ${
                   idx === safeIndex
-                    ? 'w-6 bg-gradient-to-r from-[#356BFF] to-[#A78BFA]'
+                    ? 'w-6 bg-gradient-to-r from-[#9D4EDD] to-[#B6FF00]'
                     : 'w-2 bg-white/20 hover:bg-white/35'
                 }`}
               />
@@ -346,7 +345,7 @@ export function SwipeDeckView({
             type="button"
             onClick={goNext}
             aria-label="Next category card"
-            className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/[0.12] bg-[#101426] text-slate-200 hover:text-white hover:border-[#356BFF]/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+            className="w-11 h-11 rounded-xl flex items-center justify-center border border-white/[0.12] bg-[#0F1118] text-[#A1A1AA] hover:text-white hover:border-[#B6FF00]/55 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
           >
             <ChevronRight className="w-5 h-5" />
           </button>
@@ -355,7 +354,7 @@ export function SwipeDeckView({
         <button
           type="button"
           onClick={() => onSelectCategory(activeCategory)}
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[46px] rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#356BFF] to-[#A78BFA] hover:brightness-110 shadow-lg shadow-[#356BFF]/25 transition-all active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 min-h-[46px] rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:bg-[#C6FF33] shadow-[0_0_24px_-6px_rgba(182,255,0,0.5)] transition-all active:scale-[0.985] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           <span>Open {activeCategory.title}</span>
           <ArrowRight className="w-4 h-4" />

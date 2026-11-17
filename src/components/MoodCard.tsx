@@ -31,10 +31,10 @@ export function MoodCard({
         }
       }}
       aria-pressed={isSelected}
-      className={`group relative overflow-hidden rounded-2xl text-left transition-transform duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 active:scale-[0.985] ${
+      className={`group relative overflow-hidden rounded-2xl text-left transition-transform duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] active:scale-[0.985] ${
         isSelected
-          ? 'ring-2 ring-indigo-500 border border-indigo-400/50 bg-[#141827]'
-          : 'border border-white/[0.08] bg-[#10131C] hover:border-white/[0.18] hover:-translate-y-0.5'
+          ? 'ring-2 ring-[#B6FF00] border border-[#B6FF00]/70 bg-[#0F1118]'
+          : 'border border-white/[0.08] bg-[#0F1118] hover:border-[#9D4EDD]/60 hover:-translate-y-0.5'
       }`}
     >
       {/* Background Cover Artwork with measured contrast scrim */}
@@ -47,7 +47,7 @@ export function MoodCard({
         <div
           className="absolute inset-0"
           style={{
-            background: `linear-gradient(155deg, ${mood.glowColor} 0%, rgba(10, 12, 19, 0.88) 55%, rgba(7, 8, 11, 0.96) 100%)`,
+            background: `linear-gradient(155deg, ${mood.glowColor} 0%, rgba(15, 17, 24, 0.88) 55%, rgba(8, 9, 13, 0.96) 100%)`,
           }}
         />
       </div>
@@ -71,8 +71,8 @@ export function MoodCard({
             aria-label={`Play ${mood.name} mood`}
             className={`min-w-[40px] min-h-[40px] w-10 h-10 rounded-full flex items-center justify-center transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
               isPlayingThisMood
-                ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                : 'bg-white/10 text-white hover:bg-indigo-500 group-hover:bg-indigo-500/90'
+                ? 'bg-[#B6FF00] text-[#08090D] shadow-lg shadow-[#B6FF00]/30'
+                : 'bg-white/10 text-white hover:bg-[#B6FF00] hover:text-[#08090D] group-hover:bg-[#B6FF00]/90 group-hover:text-[#08090D]'
             }`}
           >
             <Play className="w-4 h-4 fill-current translate-x-[1px]" />
@@ -83,13 +83,15 @@ export function MoodCard({
           <h3 className="font-display text-lg sm:text-xl font-semibold text-white tracking-tight">
             {mood.name}
           </h3>
-          <p className="mt-1 text-xs sm:text-sm text-slate-300/85 line-clamp-2 leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-[#A1A1AA] line-clamp-2 leading-relaxed">
             {mood.description}
           </p>
-          <div className="mt-3 flex items-center gap-2 text-xs text-slate-400">
+          <div className="mt-3 flex items-center gap-2 text-xs text-[#A1A1AA]">
             <span className="tabular-nums">{trackCount} tracks</span>
             <span aria-hidden="true">·</span>
-            <span>{isPlayingThisMood ? 'Playing now' : isSelected ? 'Selected' : 'Explore vibe'}</span>
+            <span className={isPlayingThisMood || isSelected ? 'text-[#B6FF00] font-medium' : ''}>
+              {isPlayingThisMood ? 'Playing now' : isSelected ? 'Selected' : 'Explore vibe'}
+            </span>
           </div>
         </div>
       </div>

@@ -77,11 +77,11 @@ export function TrackList({
 
   if (tracks.length === 0) {
     return (
-      <div className="rounded-2xl border border-white/[0.08] bg-[#101426]/90 p-8 sm:p-12 text-center">
+      <div className="rounded-2xl border border-white/[0.08] bg-[#0F1118] p-8 sm:p-12 text-center">
         <p className="font-display text-lg font-semibold text-white">
           {emptyTitle}
         </p>
-        <p className="mt-2 text-sm text-slate-400 max-w-md mx-auto">
+        <p className="mt-2 text-sm text-[#A1A1AA] max-w-md mx-auto">
           {emptyDescription}
         </p>
       </div>
@@ -91,7 +91,7 @@ export function TrackList({
   return (
     <div
       ref={containerRef}
-      className="rounded-2xl border border-white/[0.09] bg-[#101426]/85 divide-y divide-white/[0.06]"
+      className="rounded-2xl border border-white/[0.09] bg-[#0F1118] divide-y divide-white/[0.06]"
     >
       {tracks.map((track, index) => {
         const isCurrent = currentTrack?.id === track.id;
@@ -123,10 +123,10 @@ export function TrackList({
                 handleRowPlayToggle();
               }
             }}
-            className={`group relative flex items-center gap-3 sm:gap-4 px-3.5 sm:px-5 py-3 sm:py-3.5 transition-all duration-150 cursor-pointer first:rounded-t-2xl last:rounded-b-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#356BFF] ${
+            className={`group relative flex items-center gap-3 sm:gap-4 px-3.5 sm:px-5 py-3 sm:py-3.5 transition-all duration-150 cursor-pointer first:rounded-t-2xl last:rounded-b-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#B6FF00] ${
               isCurrent
-                ? 'bg-gradient-to-r from-[#356BFF]/18 via-[#A78BFA]/10 to-transparent'
-                : 'hover:bg-white/[0.04]'
+                ? 'bg-gradient-to-r from-[#9D4EDD]/16 via-[#B6FF00]/7 to-transparent'
+                : 'hover:bg-white/[0.035]'
             }`}
           >
             {/* Track Number / Active Equalizer */}
@@ -136,13 +136,13 @@ export function TrackList({
                   aria-label="Playing"
                   className="flex items-end gap-[2.5px] h-3.5"
                 >
-                  <span className="w-[3px] h-full rounded-full bg-[#356BFF] animate-pulse" />
+                  <span className="w-[3px] h-full rounded-full bg-[#B6FF00] animate-pulse" />
                   <span
-                    className="w-[3px] h-2.5 rounded-full bg-[#A78BFA] animate-pulse"
+                    className="w-[3px] h-2.5 rounded-full bg-[#9D4EDD] animate-pulse"
                     style={{ animationDelay: '150ms' }}
                   />
                   <span
-                    className="w-[3px] h-3 rounded-full bg-[#356BFF] animate-pulse"
+                    className="w-[3px] h-3 rounded-full bg-[#B6FF00] animate-pulse"
                     style={{ animationDelay: '300ms' }}
                   />
                 </div>
@@ -150,8 +150,8 @@ export function TrackList({
                 <span
                   className={`font-mono text-xs tabular-nums ${
                     isCurrent
-                      ? 'text-[#A78BFA] font-semibold'
-                      : 'text-slate-500 group-hover:text-slate-300'
+                      ? 'text-[#B6FF00] font-semibold'
+                      : 'text-[#A1A1AA]/75 group-hover:text-white'
                   }`}
                 >
                   {String(index + 1).padStart(2, '0')}
@@ -163,8 +163,8 @@ export function TrackList({
             <div
               className={`relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border transition-colors ${
                 isCurrent
-                  ? 'border-[#356BFF]/70 shadow-md shadow-[#356BFF]/25'
-                  : 'border-white/[0.1] bg-[#161B30]'
+                  ? 'border-[#B6FF00]/70 shadow-[0_0_14px_-3px_rgba(182,255,0,0.4)]'
+                  : 'border-white/[0.1] bg-[#151824]'
               }`}
             >
               <ArtworkImage
@@ -181,29 +181,25 @@ export function TrackList({
                 <p
                   className={`text-sm sm:text-[15px] font-semibold truncate ${
                     isCurrent
-                      ? 'text-white'
+                      ? 'text-[#B6FF00]'
                       : isPending
-                        ? 'text-slate-300'
-                        : 'text-slate-100 group-hover:text-white'
+                        ? 'text-[#A1A1AA]'
+                        : 'text-white'
                   }`}
                 >
                   {track.title}
                 </p>
               </div>
-              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400 truncate">
-                <span className="truncate text-slate-300/90">
-                  {track.artist}
-                </span>
+              <div className="mt-0.5 flex items-center gap-1.5 text-xs text-[#A1A1AA] truncate">
+                <span className="truncate">{track.artist}</span>
                 <span aria-hidden="true">·</span>
-                <span className="shrink-0 text-slate-400">
-                  {track.language}
-                </span>
+                <span className="shrink-0">{track.language}</span>
                 {track.album && (
                   <>
                     <span aria-hidden="true" className="hidden md:inline">
                       ·
                     </span>
-                    <span className="hidden md:inline truncate text-slate-400/90">
+                    <span className="hidden md:inline truncate">
                       {track.album}
                     </span>
                   </>
@@ -211,14 +207,14 @@ export function TrackList({
                 {showMoodName && (
                   <>
                     <span aria-hidden="true">·</span>
-                    <span className="shrink-0 text-slate-300/90">
+                    <span className="shrink-0 text-white/80">
                       {mood.emoji} {mood.name}
                     </span>
                   </>
                 )}
               </div>
               {rowFeedback && (
-                <p className="mt-1 text-[11px] font-medium text-[#A78BFA]">
+                <p className="mt-1 text-[11px] font-medium text-[#B6FF00]">
                   {rowFeedback}
                 </p>
               )}
@@ -231,10 +227,10 @@ export function TrackList({
                   isPending
                     ? 'text-amber-300/90 font-sans font-medium'
                     : track.isLive
-                      ? 'text-[#356BFF] font-medium'
+                      ? 'text-[#B6FF00] font-medium'
                       : isCurrent
-                        ? 'text-[#A78BFA] font-medium'
-                        : 'text-slate-400'
+                        ? 'text-[#B6FF00] font-medium'
+                        : 'text-[#A1A1AA]'
                 }`}
               >
                 {isPending ? 'Source Pending' : track.durationLabel}
@@ -255,10 +251,10 @@ export function TrackList({
                     ? `Pause ${track.title}`
                     : `Play ${track.title}`
                 }
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] disabled:opacity-40 disabled:cursor-not-allowed ${
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] disabled:opacity-40 disabled:cursor-not-allowed ${
                   isCurrent
-                    ? 'bg-gradient-to-r from-[#356BFF] to-[#A78BFA] text-white shadow-md shadow-[#356BFF]/30'
-                    : 'text-slate-300 hover:text-white hover:bg-white/[0.08]'
+                    ? 'bg-[#B6FF00] text-[#08090D] shadow-[0_0_16px_-4px_rgba(182,255,0,0.5)]'
+                    : 'text-[#A1A1AA] hover:text-[#B6FF00] hover:bg-white/[0.06]'
                 }`}
               >
                 {isPlaying ? (
@@ -279,10 +275,10 @@ export function TrackList({
                     ? `Remove ${track.title} from favourites`
                     : `Save ${track.title} to favourites`
                 }
-                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] ${
                   fav
-                    ? 'text-[#A78BFA] hover:text-white'
-                    : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                    ? 'text-[#B6FF00] hover:text-white'
+                    : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
                 }`}
               >
                 <Heart className={`w-4 h-4 ${fav ? 'fill-current' : ''}`} />
@@ -297,10 +293,10 @@ export function TrackList({
                   }}
                   aria-label={`More options for ${track.title}`}
                   aria-expanded={isMenuOpen}
-                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                  className={`min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] ${
                     isMenuOpen
                       ? 'bg-white/[0.1] text-white'
-                      : 'text-slate-400 hover:text-white hover:bg-white/[0.06]'
+                      : 'text-[#A1A1AA] hover:text-white hover:bg-white/[0.06]'
                   }`}
                 >
                   <MoreVertical className="w-4 h-4" />
@@ -310,7 +306,7 @@ export function TrackList({
                   <div
                     role="menu"
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute right-0 top-full mt-1.5 z-30 w-52 rounded-2xl border border-white/[0.12] bg-[#141933]/98 backdrop-blur-xl shadow-2xl p-1.5 text-left"
+                    className="absolute right-0 top-full mt-1.5 z-30 w-52 rounded-2xl border border-[#9D4EDD]/35 bg-[#0F1118]/98 backdrop-blur-xl shadow-2xl p-1.5 text-left"
                   >
                     {!isPending && (
                       <>
@@ -322,9 +318,9 @@ export function TrackList({
                             setOpenMenuTrackId(null);
                             showRowFeedback(track.id, 'Playing next in queue');
                           }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-white/[0.08] transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-white/90 hover:text-white hover:bg-white/[0.07] transition-colors"
                         >
-                          <ListPlus className="w-4 h-4 text-[#356BFF]" />
+                          <ListPlus className="w-4 h-4 text-[#B6FF00]" />
                           <span>Play Next</span>
                         </button>
 
@@ -336,9 +332,9 @@ export function TrackList({
                             setOpenMenuTrackId(null);
                             showRowFeedback(track.id, 'Added to queue');
                           }}
-                          className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-white/[0.08] transition-colors"
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-white/90 hover:text-white hover:bg-white/[0.07] transition-colors"
                         >
-                          <ListEnd className="w-4 h-4 text-[#A78BFA]" />
+                          <ListEnd className="w-4 h-4 text-[#C77DFF]" />
                           <span>Add to Queue</span>
                         </button>
                       </>
@@ -351,11 +347,11 @@ export function TrackList({
                         toggleFavourite(track.id);
                         setOpenMenuTrackId(null);
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-slate-200 hover:text-white hover:bg-white/[0.08] transition-colors"
+                      className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-white/90 hover:text-white hover:bg-white/[0.07] transition-colors"
                     >
                       <Heart
                         className={`w-4 h-4 ${
-                          fav ? 'fill-current text-[#A78BFA]' : 'text-slate-400'
+                          fav ? 'fill-current text-[#B6FF00]' : 'text-[#A1A1AA]'
                         }`}
                       />
                       <span>
@@ -370,9 +366,9 @@ export function TrackList({
                         rel="noopener noreferrer"
                         role="menuitem"
                         onClick={() => setOpenMenuTrackId(null)}
-                        className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.08] transition-colors"
+                        className="w-full flex items-center gap-2.5 px-3 py-2.5 min-h-[40px] rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-white hover:bg-white/[0.07] transition-colors"
                       >
-                        <ExternalLink className="w-4 h-4 text-slate-400" />
+                        <ExternalLink className="w-4 h-4" />
                         <span>Open on YouTube</span>
                       </a>
                     )}

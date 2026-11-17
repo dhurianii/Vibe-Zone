@@ -40,12 +40,10 @@ export function CategoryMusicView({
 
   const modeMeta = EXPERIENCE_MODES[category.mode];
 
-  // Reset playlist selection when switching category
   useEffect(() => {
     setSelectedPlaylistId(null);
   }, [category.id]);
 
-  // Sync shell ambient glow with category mood without disturbing active playback
   useEffect(() => {
     if (!currentTrack) {
       setActiveMoodId(category.primaryMoodId);
@@ -121,13 +119,13 @@ export function CategoryMusicView({
         <button
           type="button"
           onClick={onBackToDeck}
-          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-medium text-slate-200 hover:text-white border border-white/[0.1] bg-[#141933]/80 hover:bg-white/[0.08] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+          className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-medium text-[#A1A1AA] hover:text-white border border-white/[0.1] hover:border-[#B6FF00]/45 bg-[#0F1118]/90 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to {modeMeta.title}</span>
         </button>
 
-        <span className="text-xs font-medium text-slate-400">
+        <span className="text-xs font-medium text-[#A1A1AA]">
           {modeMeta.title}
         </span>
       </div>
@@ -135,19 +133,19 @@ export function CategoryMusicView({
       {/* 1. Immersive Category Header */}
       <section
         aria-label={`${category.title} header`}
-        className="relative overflow-hidden rounded-3xl border border-white/[0.12] bg-[#101426] shadow-[0_24px_80px_-24px_rgba(53,107,255,0.35)]"
+        className="relative overflow-hidden rounded-3xl border border-[#9D4EDD]/30 bg-[#0F1118] shadow-[0_24px_80px_-28px_rgba(157,78,221,0.3)]"
       >
         {/* Background Artwork + Measured Gradient Scrim */}
         <div className="absolute inset-0">
           <ArtworkImage
             src={category.coverImage}
             alt={`${category.title} mood backdrop`}
-            className="w-full h-full object-cover opacity-55"
+            className="w-full h-full object-cover opacity-45"
           />
           <div
             className="absolute inset-0"
             style={{
-              background: `linear-gradient(125deg, rgba(16, 20, 38, 0.96) 15%, rgba(16, 20, 38, 0.78) 55%, ${category.glowColor} 100%)`,
+              background: `linear-gradient(125deg, rgba(8, 9, 13, 0.97) 18%, rgba(8, 9, 13, 0.82) 55%, ${category.glowColor} 100%)`,
             }}
           />
         </div>
@@ -162,10 +160,10 @@ export function CategoryMusicView({
               className="absolute -right-24 -top-24 w-80 h-80 rounded-full blur-3xl"
               style={{
                 background:
-                  'radial-gradient(circle, rgba(53,107,255,0.32), rgba(167,139,250,0.16), transparent 70%)',
+                  'radial-gradient(circle, rgba(157,78,221,0.28), rgba(182,255,0,0.12), transparent 70%)',
                 willChange: 'transform, opacity',
               }}
-              animate={{ scale: [1, 1.12, 1], opacity: [0.55, 0.85, 0.55] }}
+              animate={{ scale: [1, 1.12, 1], opacity: [0.5, 0.8, 0.5] }}
               transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
             />
           )}
@@ -177,10 +175,10 @@ export function CategoryMusicView({
           >
             <defs>
               <linearGradient id="cat-wave-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#356BFF" stopOpacity="0" />
-                <stop offset="40%" stopColor="#356BFF" stopOpacity="0.85" />
-                <stop offset="75%" stopColor="#A78BFA" stopOpacity="0.75" />
-                <stop offset="100%" stopColor="#A78BFA" stopOpacity="0" />
+                <stop offset="0%" stopColor="#9D4EDD" stopOpacity="0" />
+                <stop offset="40%" stopColor="#9D4EDD" stopOpacity="0.8" />
+                <stop offset="75%" stopColor="#B6FF00" stopOpacity="0.75" />
+                <stop offset="100%" stopColor="#B6FF00" stopOpacity="0" />
               </linearGradient>
             </defs>
             <motion.path
@@ -198,7 +196,7 @@ export function CategoryMusicView({
 
         {/* Foreground Content */}
         <div className="relative z-10 p-6 sm:p-8 lg:p-10 grid grid-cols-1 md:grid-cols-[200px_1fr] lg:grid-cols-[230px_1fr] gap-6 sm:gap-8 items-center">
-          <div className="w-40 h-40 sm:w-48 sm:h-48 md:w-full md:aspect-square rounded-2xl overflow-hidden border border-white/[0.16] shadow-2xl shadow-black/50 shrink-0">
+          <div className="w-40 h-40 sm:w-48 sm:h-48 md:w-full md:aspect-square rounded-2xl overflow-hidden border border-[#9D4EDD]/35 shadow-2xl shadow-black/70 shrink-0">
             <ArtworkImage
               src={category.coverImage}
               alt={`${category.title} cover artwork`}
@@ -208,7 +206,7 @@ export function CategoryMusicView({
 
           <div className="flex flex-col justify-between gap-5 min-w-0">
             <div>
-              <p className="text-xs font-medium text-[#A78BFA]">
+              <p className="text-xs font-medium text-[#C77DFF]">
                 {modeMeta.title} · {allCategoryTracks.length}{' '}
                 {allCategoryTracks.length === 1 ? 'song' : 'songs'}
               </p>
@@ -223,11 +221,11 @@ export function CategoryMusicView({
                 {category.title} MODE
               </h1>
 
-              <p className="mt-2.5 text-base sm:text-lg text-slate-100/95 font-medium max-w-2xl leading-relaxed">
+              <p className="mt-2.5 text-base sm:text-lg text-white/95 font-medium max-w-2xl leading-relaxed">
                 &ldquo;{category.description}&rdquo;
               </p>
 
-              <p className="mt-1.5 text-xs sm:text-sm text-slate-300/85 max-w-2xl">
+              <p className="mt-1.5 text-xs sm:text-sm text-[#A1A1AA] max-w-2xl">
                 {category.curatorNote}
               </p>
             </div>
@@ -237,7 +235,7 @@ export function CategoryMusicView({
                 type="button"
                 onClick={() => handlePlayAll(false)}
                 disabled={playableTracks.length === 0}
-                className="inline-flex items-center gap-2.5 px-6 py-3 min-h-[46px] rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-[#356BFF] to-[#A78BFA] hover:brightness-110 shadow-lg shadow-[#356BFF]/30 transition-all active:scale-[0.985] disabled:opacity-50 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+                className="inline-flex items-center gap-2.5 px-6 py-3 min-h-[46px] rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:bg-[#C6FF33] shadow-[0_0_24px_-6px_rgba(182,255,0,0.5)] transition-all active:scale-[0.985] disabled:opacity-50 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>PLAY ALL</span>
@@ -247,9 +245,9 @@ export function CategoryMusicView({
                 type="button"
                 onClick={() => handlePlayAll(true)}
                 disabled={playableTracks.length === 0}
-                className="inline-flex items-center gap-2 px-5 py-3 min-h-[46px] rounded-xl text-sm font-medium text-slate-100 border border-white/[0.15] bg-white/[0.05] hover:bg-white/[0.1] transition-colors disabled:opacity-50 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+                className="inline-flex items-center gap-2 px-5 py-3 min-h-[46px] rounded-xl text-sm font-medium text-white border border-white/[0.14] hover:border-[#9D4EDD]/60 bg-white/[0.04] hover:bg-white/[0.08] transition-colors disabled:opacity-50 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
               >
-                <Shuffle className="w-4 h-4" />
+                <Shuffle className="w-4 h-4 text-[#C77DFF]" />
                 <span>Shuffle</span>
               </button>
             </div>
@@ -257,7 +255,7 @@ export function CategoryMusicView({
         </div>
       </section>
 
-      {/* 2. Curated Playlists Section (derived strictly from real catalog tracks) */}
+      {/* 2. Curated Playlists Section */}
       {curatedPlaylists.length > 0 && (
         <section aria-label="Curated playlists" className="space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
@@ -265,7 +263,7 @@ export function CategoryMusicView({
               <h2 className="font-display text-xl sm:text-2xl font-bold text-white tracking-tight">
                 Curated Playlists
               </h2>
-              <p className="mt-0.5 text-xs sm:text-sm text-slate-400">
+              <p className="mt-0.5 text-xs sm:text-sm text-[#A1A1AA]">
                 Select a playlist to focus the tracklist or press play directly.
               </p>
             </div>
@@ -274,7 +272,7 @@ export function CategoryMusicView({
               <button
                 type="button"
                 onClick={() => setSelectedPlaylistId(null)}
-                className="text-xs font-medium text-[#A78BFA] hover:text-white transition-colors py-1.5 px-3 rounded-lg border border-[#A78BFA]/30 bg-[#A78BFA]/10"
+                className="text-xs font-medium text-[#B6FF00] hover:text-white transition-colors py-1.5 px-3 rounded-lg border border-[#B6FF00]/35 bg-[#B6FF00]/10"
               >
                 Show All {category.title} Songs
               </button>
@@ -306,10 +304,10 @@ export function CategoryMusicView({
                       setLanguageFilter('All');
                     }
                   }}
-                  className={`group relative overflow-hidden rounded-2xl border p-4 flex items-center gap-3.5 text-left transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF] ${
+                  className={`group relative overflow-hidden rounded-2xl border p-4 flex items-center gap-3.5 text-left transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00] ${
                     isSelected
-                      ? 'border-[#356BFF] bg-gradient-to-br from-[#356BFF]/20 via-[#141933] to-[#A78BFA]/15 shadow-lg shadow-[#356BFF]/20'
-                      : 'border-white/[0.09] bg-[#141933]/60 hover:bg-[#161D3B]/90 hover:border-white/[0.18]'
+                      ? 'border-[#B6FF00]/75 bg-gradient-to-br from-[#9D4EDD]/20 via-[#0F1118] to-[#B6FF00]/10 shadow-[0_0_24px_-8px_rgba(182,255,0,0.3)]'
+                      : 'border-white/[0.09] bg-[#0F1118] hover:bg-[#141722] hover:border-[#9D4EDD]/50'
                   }`}
                 >
                   <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-white/[0.1]">
@@ -325,10 +323,10 @@ export function CategoryMusicView({
                     <h3 className="font-display text-sm sm:text-base font-semibold text-white truncate">
                       {playlist.title}
                     </h3>
-                    <p className="mt-0.5 text-xs text-slate-400 truncate">
+                    <p className="mt-0.5 text-xs text-[#A1A1AA] truncate">
                       {playlist.subtitle}
                     </p>
-                    <p className="mt-1.5 text-[11px] font-medium text-[#A78BFA] tabular-nums">
+                    <p className="mt-1.5 text-[11px] font-medium text-[#C77DFF] tabular-nums">
                       {playlist.tracks.length}{' '}
                       {playlist.tracks.length === 1 ? 'song' : 'songs'}
                     </p>
@@ -347,8 +345,8 @@ export function CategoryMusicView({
                     }
                     className={`w-11 h-11 rounded-xl shrink-0 flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
                       isSelected
-                        ? 'bg-gradient-to-r from-[#356BFF] to-[#A78BFA] text-white shadow-md shadow-[#356BFF]/30'
-                        : 'bg-white/[0.07] text-slate-200 group-hover:bg-[#356BFF] group-hover:text-white'
+                        ? 'bg-[#B6FF00] text-[#08090D] shadow-[0_0_16px_-3px_rgba(182,255,0,0.5)]'
+                        : 'bg-white/[0.07] text-white group-hover:bg-[#B6FF00] group-hover:text-[#08090D]'
                     }`}
                   >
                     {isThisPlaylistPlaying ? (
@@ -375,7 +373,7 @@ export function CategoryMusicView({
 
           <div className="flex flex-wrap items-center gap-3">
             <LanguageTabs value={languageFilter} onChange={setLanguageFilter} />
-            <span className="text-xs text-slate-400 tabular-nums">
+            <span className="text-xs text-[#A1A1AA] tabular-nums">
               {displayedTracks.length}{' '}
               {displayedTracks.length === 1 ? 'song' : 'songs'}
             </span>

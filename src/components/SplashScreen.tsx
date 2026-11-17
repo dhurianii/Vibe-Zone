@@ -18,18 +18,18 @@ interface FloatingParticle {
 }
 
 const AMBIENT_PARTICLES: FloatingParticle[] = [
-  { id: 1, x: '14%', y: '24%', size: 4, delay: 0.05, duration: 3.2, driftX: 12, driftY: -18, color: '#356BFF' },
-  { id: 2, x: '22%', y: '68%', size: 3, delay: 0.2, duration: 3.6, driftX: -10, driftY: -14, color: '#A78BFA' },
-  { id: 3, x: '31%', y: '34%', size: 5, delay: 0.1, duration: 3.4, driftX: 14, driftY: 12, color: '#60A5FA' },
-  { id: 4, x: '42%', y: '18%', size: 3, delay: 0.3, duration: 3.1, driftX: -8, driftY: 16, color: '#A78BFA' },
-  { id: 5, x: '60%', y: '20%', size: 4, delay: 0.15, duration: 3.5, driftX: 10, driftY: 14, color: '#356BFF' },
-  { id: 6, x: '72%', y: '30%', size: 5, delay: 0.25, duration: 3.2, driftX: -14, driftY: -12, color: '#A78BFA' },
-  { id: 7, x: '84%', y: '44%', size: 3, delay: 0.12, duration: 3.6, driftX: -12, driftY: -16, color: '#60A5FA' },
-  { id: 8, x: '78%', y: '72%', size: 4, delay: 0.28, duration: 3.3, driftX: 12, driftY: -14, color: '#356BFF' },
-  { id: 9, x: '64%', y: '78%', size: 3, delay: 0.18, duration: 3.4, driftX: -10, driftY: 10, color: '#A78BFA' },
-  { id: 10, x: '36%', y: '76%', size: 4, delay: 0.22, duration: 3.1, driftX: 14, driftY: -12, color: '#60A5FA' },
-  { id: 11, x: '18%', y: '46%', size: 3, delay: 0.08, duration: 3.5, driftX: 10, driftY: 12, color: '#A78BFA' },
-  { id: 12, x: '88%', y: '24%', size: 4, delay: 0.32, duration: 3.3, driftX: -10, driftY: 16, color: '#356BFF' },
+  { id: 1, x: '14%', y: '24%', size: 4, delay: 0.05, duration: 3.2, driftX: 12, driftY: -18, color: '#B6FF00' },
+  { id: 2, x: '22%', y: '68%', size: 3, delay: 0.2, duration: 3.6, driftX: -10, driftY: -14, color: '#9D4EDD' },
+  { id: 3, x: '31%', y: '34%', size: 5, delay: 0.1, duration: 3.4, driftX: 14, driftY: 12, color: '#C77DFF' },
+  { id: 4, x: '42%', y: '18%', size: 3, delay: 0.3, duration: 3.1, driftX: -8, driftY: 16, color: '#9D4EDD' },
+  { id: 5, x: '60%', y: '20%', size: 4, delay: 0.15, duration: 3.5, driftX: 10, driftY: 14, color: '#B6FF00' },
+  { id: 6, x: '72%', y: '30%', size: 5, delay: 0.25, duration: 3.2, driftX: -14, driftY: -12, color: '#9D4EDD' },
+  { id: 7, x: '84%', y: '44%', size: 3, delay: 0.12, duration: 3.6, driftX: -12, driftY: -16, color: '#B6FF00' },
+  { id: 8, x: '78%', y: '72%', size: 4, delay: 0.28, duration: 3.3, driftX: 12, driftY: -14, color: '#C77DFF' },
+  { id: 9, x: '64%', y: '78%', size: 3, delay: 0.18, duration: 3.4, driftX: -10, driftY: 10, color: '#9D4EDD' },
+  { id: 10, x: '36%', y: '76%', size: 4, delay: 0.22, duration: 3.1, driftX: 14, driftY: -12, color: '#B6FF00' },
+  { id: 11, x: '18%', y: '46%', size: 3, delay: 0.08, duration: 3.5, driftX: 10, driftY: 12, color: '#9D4EDD' },
+  { id: 12, x: '88%', y: '24%', size: 4, delay: 0.32, duration: 3.3, driftX: -10, driftY: 16, color: '#B6FF00' },
 ];
 
 const TAGLINE_WORDS = ['Find', 'Your', 'Vibe.', 'Feel', 'Your', 'Moment.'];
@@ -47,12 +47,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
       return () => window.clearTimeout(quickTimer);
     }
 
-    // Scene 3 final sound-wave pulse behind logo
     const pulseTimer = window.setTimeout(() => {
       setPulsePhase(true);
     }, 2200);
 
-    // Scene 4 smooth exit transition into Home (~3.1s visible + 0.55s fade/zoom = ~3.65s total)
     const exitTimer = window.setTimeout(() => {
       setIsVisible(false);
     }, 3050);
@@ -85,22 +83,22 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] },
                 }
           }
-          className="fixed inset-0 z-[100] overflow-hidden bg-[#101426] flex items-center justify-center px-6 select-none"
+          className="fixed inset-0 z-[100] overflow-hidden bg-[#08090D] flex items-center justify-center px-6 select-none"
         >
-          {/* Scene 1: Deep Navy Canvas with Electric-Blue & Lavender Gradient Glow */}
+          {/* Scene 1: Deep Black Canvas with Electric Purple & Neon Green Glow */}
           <motion.div
             aria-hidden="true"
             initial={{ opacity: 0, scale: 0.88 }}
             animate={
               prefersReducedMotion
                 ? { opacity: 0.75, scale: 1 }
-                : { opacity: [0.2, 0.9, 0.78], scale: [0.88, 1.06, 1] }
+                : { opacity: [0.2, 0.85, 0.72], scale: [0.88, 1.06, 1] }
             }
             transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(circle at 38% 42%, rgba(53, 107, 255, 0.34), transparent 52%), radial-gradient(circle at 64% 58%, rgba(167, 139, 250, 0.26), transparent 54%)',
+                'radial-gradient(circle at 36% 42%, rgba(157, 78, 221, 0.28), transparent 52%), radial-gradient(circle at 66% 58%, rgba(182, 255, 0, 0.14), transparent 52%)',
             }}
           />
 
@@ -110,7 +108,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                'radial-gradient(ellipse 75% 65% at 50% 50%, transparent 45%, rgba(8, 10, 20, 0.72) 100%)',
+                'radial-gradient(ellipse 75% 65% at 50% 50%, transparent 45%, rgba(4, 5, 8, 0.8) 100%)',
             }}
           />
 
@@ -162,16 +160,16 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             >
               <defs>
                 <linearGradient id="vz-wave-1" x1="0%" y1="50%" x2="100%" y2="50%">
-                  <stop offset="0%" stopColor="#356BFF" stopOpacity="0" />
-                  <stop offset="30%" stopColor="#356BFF" stopOpacity="0.65" />
-                  <stop offset="55%" stopColor="#A78BFA" stopOpacity="0.75" />
-                  <stop offset="100%" stopColor="#A78BFA" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#9D4EDD" stopOpacity="0" />
+                  <stop offset="30%" stopColor="#9D4EDD" stopOpacity="0.7" />
+                  <stop offset="58%" stopColor="#B6FF00" stopOpacity="0.75" />
+                  <stop offset="100%" stopColor="#B6FF00" stopOpacity="0" />
                 </linearGradient>
                 <linearGradient id="vz-wave-2" x1="0%" y1="50%" x2="100%" y2="50%">
-                  <stop offset="0%" stopColor="#A78BFA" stopOpacity="0" />
-                  <stop offset="35%" stopColor="#A78BFA" stopOpacity="0.45" />
-                  <stop offset="70%" stopColor="#356BFF" stopOpacity="0.55" />
-                  <stop offset="100%" stopColor="#356BFF" stopOpacity="0" />
+                  <stop offset="0%" stopColor="#B6FF00" stopOpacity="0" />
+                  <stop offset="35%" stopColor="#B6FF00" stopOpacity="0.4" />
+                  <stop offset="70%" stopColor="#9D4EDD" stopOpacity="0.55" />
+                  <stop offset="100%" stopColor="#9D4EDD" stopOpacity="0" />
                 </linearGradient>
               </defs>
 
@@ -225,12 +223,11 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
           <div className="relative z-10 flex flex-col items-center text-center max-w-xl w-full">
             {/* Scene 2 & 3: Logo Emblem + Acoustic Rings */}
             <div className="relative flex items-center justify-center mb-7 sm:mb-8">
-              {/* Primary Expanding Sound-Wave Ring (Scene 2) */}
               {!prefersReducedMotion && (
                 <>
                   <motion.span
                     aria-hidden="true"
-                    className="absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-[#356BFF]/55"
+                    className="absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-[#B6FF00]/55"
                     initial={{ opacity: 0, scale: 0.65 }}
                     animate={{
                       opacity: [0, 0.85, 0],
@@ -244,7 +241,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   />
                   <motion.span
                     aria-hidden="true"
-                    className="absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-[#A78BFA]/45"
+                    className="absolute w-24 h-24 sm:w-28 sm:h-28 rounded-full border border-[#9D4EDD]/55"
                     initial={{ opacity: 0, scale: 0.65 }}
                     animate={{
                       opacity: [0, 0.7, 0],
@@ -259,14 +256,13 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 </>
               )}
 
-              {/* Final Sound-Wave Pulse Behind Logo (Scene 3) */}
               {!prefersReducedMotion && pulsePhase && (
                 <motion.span
                   aria-hidden="true"
                   className="absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full"
                   style={{
                     background:
-                      'radial-gradient(circle, rgba(53, 107, 255, 0.42) 0%, rgba(167, 139, 250, 0.22) 45%, transparent 72%)',
+                      'radial-gradient(circle, rgba(182, 255, 0, 0.32) 0%, rgba(157, 78, 221, 0.24) 48%, transparent 72%)',
                   }}
                   initial={{ opacity: 0.85, scale: 0.8 }}
                   animate={{ opacity: 0, scale: 2.35 }}
@@ -287,7 +283,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 className="absolute w-28 h-28 sm:w-32 sm:h-32 rounded-full blur-2xl"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(53, 107, 255, 0.55), rgba(167, 139, 250, 0.45))',
+                    'linear-gradient(135deg, rgba(157, 78, 221, 0.52), rgba(182, 255, 0, 0.28))',
                 }}
               />
 
@@ -304,13 +300,13 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   delay: prefersReducedMotion ? 0 : 0.68,
                   ease: [0.16, 1, 0.3, 1],
                 }}
-                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl p-[1.5px] shadow-[0_14px_45px_rgba(53,107,255,0.35)]"
+                className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-3xl p-[1.5px] shadow-[0_14px_45px_rgba(157,78,221,0.35)]"
                 style={{
                   background:
-                    'linear-gradient(135deg, rgba(53, 107, 255, 0.9), rgba(167, 139, 250, 0.85))',
+                    'linear-gradient(135deg, rgba(157, 78, 221, 0.95), rgba(182, 255, 0, 0.88))',
                 }}
               >
-                <div className="w-full h-full rounded-[22px] bg-[#101426]/95 backdrop-blur-md flex items-center justify-center">
+                <div className="w-full h-full rounded-[22px] bg-[#08090D]/95 backdrop-blur-md flex items-center justify-center">
                   <svg
                     viewBox="0 0 64 64"
                     fill="none"
@@ -320,11 +316,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                     <defs>
                       <linearGradient id="vz-logo-grad" x1="8" y1="12" x2="56" y2="52" gradientUnits="userSpaceOnUse">
                         <stop offset="0%" stopColor="#FFFFFF" />
-                        <stop offset="52%" stopColor="#7DA4FF" />
-                        <stop offset="100%" stopColor="#A78BFA" />
+                        <stop offset="52%" stopColor="#C77DFF" />
+                        <stop offset="100%" stopColor="#B6FF00" />
                       </linearGradient>
                     </defs>
-                    {/* Left acoustic bar */}
                     <motion.rect
                       x="13"
                       y="24"
@@ -341,7 +336,6 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                       transition={{ duration: 0.9, delay: 0.8 }}
                       style={{ transformOrigin: 'center' }}
                     />
-                    {/* Central Vibe Zone 'V' Resonance Mark */}
                     <motion.path
                       d="M22.5 19 L32 45 L41.5 19"
                       stroke="url(#vz-logo-grad)"
@@ -352,7 +346,6 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                       animate={{ pathLength: 1 }}
                       transition={{ duration: 0.65, delay: 0.82, ease: [0.16, 1, 0.3, 1] }}
                     />
-                    {/* Right acoustic bar */}
                     <motion.rect
                       x="46.5"
                       y="24"
@@ -387,13 +380,13 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 delay: prefersReducedMotion ? 0 : 1.38,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-white uppercase tracking-[0.16em] drop-shadow-[0_4px_24px_rgba(53,107,255,0.35)]"
+              className="font-display text-4xl sm:text-5xl md:text-6xl font-bold text-white uppercase tracking-[0.16em] drop-shadow-[0_4px_24px_rgba(182,255,0,0.22)]"
             >
               VIBE ZONE
             </motion.h1>
 
             {/* Scene 3: Animated Tagline Reveal */}
-            <p className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-base sm:text-lg md:text-xl font-medium text-slate-200 tracking-wide">
+            <p className="mt-4 sm:mt-5 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-base sm:text-lg md:text-xl font-medium text-[#A1A1AA] tracking-wide">
               {TAGLINE_WORDS.map((word, idx) => (
                 <motion.span
                   key={`${word}-${idx}`}
@@ -410,7 +403,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                   }}
                   className={
                     idx >= 3
-                      ? 'bg-gradient-to-r from-[#8CB0FF] to-[#A78BFA] bg-clip-text text-transparent'
+                      ? 'bg-gradient-to-r from-[#C77DFF] to-[#B6FF00] bg-clip-text text-transparent font-semibold'
                       : 'text-white/95'
                   }
                 >
@@ -425,10 +418,10 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             type="button"
             onClick={handleSkip}
             initial={{ opacity: 0 }}
-            animate={{ opacity: 0.72 }}
+            animate={{ opacity: 0.78 }}
             whileHover={{ opacity: 1 }}
             transition={{ duration: 0.3, delay: prefersReducedMotion ? 0 : 0.6 }}
-            className="absolute bottom-6 right-6 min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl text-xs font-medium text-slate-300 hover:text-white border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#356BFF]"
+            className="absolute bottom-6 right-6 min-h-[44px] min-w-[44px] px-4 py-2 rounded-xl text-xs font-medium text-[#A1A1AA] hover:text-[#B6FF00] border border-white/10 hover:border-[#B6FF00]/40 bg-[#0F1118]/80 backdrop-blur-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B6FF00]"
           >
             Skip
           </motion.button>

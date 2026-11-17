@@ -25,7 +25,7 @@ export function ArtworkImage({
   if (failedCompletely) {
     return (
       <div
-        className={`flex items-center justify-center bg-gradient-to-br from-[#181B2A] via-[#101320] to-[#0A0C14] text-indigo-300/70 ${className}`}
+        className={`flex items-center justify-center bg-gradient-to-br from-[#171224] via-[#0F1118] to-[#08090D] text-[#C77DFF]/80 ${className}`}
         aria-label={alt}
       >
         <Music2 className="w-6 h-6" />

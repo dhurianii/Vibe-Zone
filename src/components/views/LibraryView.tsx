@@ -26,7 +26,7 @@ export function LibraryView({ mode, onNavigate }: LibraryViewProps) {
           <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
             {isRecent ? 'Recently Played' : 'Favourites'}
           </h1>
-          <p className="mt-2 text-sm sm:text-base text-slate-400">
+          <p className="mt-2 text-sm sm:text-base text-[#A1A1AA]">
             {isRecent
               ? 'Your recent listening sessions saved locally in this browser.'
               : 'Tracks you hearted across any mood, ready for instant replay.'}
@@ -38,7 +38,7 @@ export function LibraryView({ mode, onNavigate }: LibraryViewProps) {
             <button
               type="button"
               onClick={() => playTrack(tracks[0], tracks)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 transition-colors whitespace-nowrap"
+              className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:brightness-110 transition-all whitespace-nowrap"
             >
               <Play className="w-4 h-4 fill-current" />
               <span>Play All</span>
@@ -48,7 +48,7 @@ export function LibraryView({ mode, onNavigate }: LibraryViewProps) {
               <button
                 type="button"
                 onClick={clearRecentHistory}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-sm font-medium text-slate-300 border border-white/[0.1] bg-white/[0.04] hover:bg-white/[0.08] hover:text-white transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-sm font-medium text-[#A1A1AA] border border-white/[0.1] bg-[#0F1118] hover:border-[#9D4EDD]/50 hover:text-white transition-colors whitespace-nowrap"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Clear History</span>
@@ -59,13 +59,13 @@ export function LibraryView({ mode, onNavigate }: LibraryViewProps) {
       </div>
 
       {tracks.length === 0 ? (
-        <div className="rounded-2xl border border-white/[0.08] bg-[#0D1018] p-8 sm:p-12 text-center">
+        <div className="rounded-2xl border border-[#9D4EDD]/25 bg-[#0F1118] p-8 sm:p-12 text-center">
           <h2 className="font-display text-xl font-semibold text-white">
             {isRecent
               ? 'No listening history yet'
               : 'No favourite tracks saved yet'}
           </h2>
-          <p className="mt-2 text-sm text-slate-400 max-w-md mx-auto">
+          <p className="mt-2 text-sm text-[#A1A1AA] max-w-md mx-auto">
             {isRecent
               ? 'Select any mood and press play to start building your listening timeline.'
               : 'Tap the heart icon on any song while browsing or listening to save it here.'}
@@ -73,7 +73,7 @@ export function LibraryView({ mode, onNavigate }: LibraryViewProps) {
           <button
             type="button"
             onClick={() => onNavigate('explore')}
-            className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 transition-colors whitespace-nowrap"
+            className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:brightness-110 transition-all whitespace-nowrap"
           >
             <Compass className="w-4 h-4" />
             <span>Explore Moods</span>

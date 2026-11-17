@@ -53,28 +53,28 @@ export function SearchView() {
         <h1 className="font-display text-3xl sm:text-4xl font-bold text-white tracking-tight">
           Search Songs
         </h1>
-        <p className="mt-2 text-sm sm:text-base text-slate-400">
+        <p className="mt-2 text-sm sm:text-base text-[#A1A1AA]">
           Search across titles, artists, instruments, or mood keywords.
         </p>
       </div>
 
       {/* Search Bar */}
       <div className="relative max-w-2xl">
-        <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+        <Search className="w-5 h-5 text-[#A1A1AA] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Try 'Lofi', 'Beethoven', 'Workout', 'Night Drive'..."
           aria-label="Search songs, artists, or moods"
-          className="w-full h-13 pl-12 pr-12 rounded-2xl border border-white/[0.1] bg-[#0D1018] text-sm sm:text-base text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 transition-all"
+          className="w-full h-13 pl-12 pr-12 rounded-2xl border border-white/[0.1] bg-[#0F1118] text-sm sm:text-base text-white placeholder:text-[#A1A1AA]/60 focus:outline-none focus:border-[#B6FF00] focus:ring-2 focus:ring-[#B6FF00]/25 transition-all"
         />
         {query && (
           <button
             type="button"
             onClick={() => setQuery('')}
             aria-label="Clear search"
-            className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-slate-400 hover:text-white"
+            className="absolute right-2 top-1/2 -translate-y-1/2 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-[#A1A1AA] hover:text-white"
           >
             <X className="w-4 h-4" />
           </button>
@@ -93,10 +93,10 @@ export function SearchView() {
                 key={term}
                 type="button"
                 onClick={() => setQuery(active ? '' : term)}
-                className={`px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`px-3.5 py-2 min-h-[38px] rounded-xl text-xs font-semibold transition-colors whitespace-nowrap ${
                   active
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-[#10131D] text-slate-300 border border-white/[0.08] hover:text-white hover:border-white/[0.18]'
+                    ? 'bg-[#B6FF00] text-[#08090D]'
+                    : 'bg-[#0F1118] text-[#A1A1AA] border border-white/[0.08] hover:text-white hover:border-[#9D4EDD]/50'
                 }`}
               >
                 {term}
@@ -107,7 +107,7 @@ export function SearchView() {
       </div>
 
       {/* Results Header */}
-      <div className="flex items-center justify-between text-xs text-slate-400">
+      <div className="flex items-center justify-between text-xs text-[#A1A1AA]">
         <span className="tabular-nums">
           {filteredTracks.length}{' '}
           {filteredTracks.length === 1 ? 'track' : 'tracks'}

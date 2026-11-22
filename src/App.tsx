@@ -48,7 +48,7 @@ function SonaShell() {
     getMood,
     activeMoodId,
     currentTrack,
-    favourites,
+    favouriteTracks,
     playMood,
   } = usePlayer();
 
@@ -119,7 +119,7 @@ function SonaShell() {
         activeSection={activeSection}
         onNavigate={handleNavigate}
         onSurpriseVibe={handleSurpriseVibe}
-        favouritesCount={favourites.length}
+        favouritesCount={favouriteTracks.length}
       />
 
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-6">

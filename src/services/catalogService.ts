@@ -5,7 +5,7 @@ import {
   orderBy,
   query,
 } from 'firebase/firestore';
-import { MOOD_CATEGORIES, TRACKS } from '../data/moodsAndTracks';
+import { MOOD_CATEGORIES } from '../data/moodsAndTracks';
 import {
   OperationType,
   auth,
@@ -281,13 +281,7 @@ export function subscribeToSongs(
         };
       });
 
-      // Guard against duplicate Zinda if legacy mt-hi-2 still exists in Firestore
-      const hasPrimaryZinda = rawItems.some((item) => item.id === 'wk-hi-1');
-      const items = rawItems.filter(
-        (item) => !(hasPrimaryZinda && item.id === 'mt-hi-2')
-      );
-
-      onData(items);
+      onData(rawItems);
     },
     (error) => {
       try {
@@ -404,10 +398,9 @@ export async function seedStarterCatalogIfEmpty(): Promise<{
   seededMoods: number;
   seededLanguages: number;
 }> {
-  const [moodsSnap, langsSnap, songsSnap] = await Promise.all([
+  const [moodsSnap, langsSnap] = await Promise.all([
     getDocs(collection(db, 'moods')),
     getDocs(collection(db, 'languages')),
-    getDocs(collection(db, 'songs')),
   ]);
 
   const moodsPayload = moodsSnap.empty
@@ -433,35 +426,7 @@ export async function seedStarterCatalogIfEmpty(): Promise<{
       }))
     : [];
 
-  const songsPayload = songsSnap.empty
-    ? TRACKS.map((track) => ({
-        id: track.id.replace(/[^a-zA-Z0-9_-]/g, '_'),
-        title: track.title.slice(0, 160),
-        artist: track.artist.slice(0, 160),
-        ...(track.album ? { album: track.album.slice(0, 160) } : {}),
-        ...(track.description
-          ? { description: track.description.slice(0, 600) }
-          : {}),
-        language: track.language.slice(0, 40),
-        moodId: track.moodId,
-        provider: track.provider,
-        providerTrackId: track.providerTrackId.slice(0, 512),
-        artworkUrl: track.artworkUrl.slice(0, 1024),
-        durationLabel: track.durationLabel.slice(0, 20),
-        durationSeconds: Math.min(
-          86400,
-          Math.max(0, Math.round(track.durationSeconds))
-        ),
-        isLive: Boolean(track.isLive),
-        keywords: track.keywords.slice(0, 20),
-      }))
-    : [];
-
-  if (
-    moodsPayload.length === 0 &&
-    defaultLangObjects.length === 0 &&
-    songsPayload.length === 0
-  ) {
+  if (moodsPayload.length === 0 && defaultLangObjects.length === 0) {
     return { seededSongs: 0, seededMoods: 0, seededLanguages: 0 };
   }
 
@@ -470,19 +435,20 @@ export async function seedStarterCatalogIfEmpty(): Promise<{
     body: JSON.stringify({
       moods: moodsPayload,
       languages: defaultLangObjects,
-      songs: songsPayload,
+      songs: [],
     }),
   });
 
   return {
-    seededSongs: songsPayload.length,
+    seededSongs: 0,
     seededMoods: moodsPayload.length,
     seededLanguages: defaultLangObjects.length,
   };
 }
 
 /**
- * Migrates an existing pre-merge Firestore catalog via server-verified admin API.
+ * Migrates legacy Motivation mood metadata into WORKOUT via server-verified admin API.
+ * Never seeds or injects starter songs.
  */
 export async function syncWorkoutCatalogUpgrade(): Promise<{
   migratedSongs: number;
@@ -490,7 +456,6 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
   mergedMood: boolean;
 }> {
   let migratedSongs = 0;
-  let addedSongs = 0;
   let mergedMood = false;
 
   const workoutMood = MOOD_CATEGORIES.find((m) => m.id === 'workout')!;
@@ -529,52 +494,9 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
     mergedMood = true;
   }
 
-  const existingIds = new Set<string>();
-  const existingNormalizedKeys = new Set<string>();
-  const deleteSongIds: string[] = [];
   const songsToSync: Array<Record<string, unknown>> = [];
-
-  const normalizeKey = (title: string) =>
-    title
-      .toLowerCase()
-      .replace(/\(.*?\)/g, '')
-      .replace(/[^a-z0-9]+/g, ' ')
-      .trim();
-
   songsSnap.docs.forEach((d) => {
     const data = d.data();
-    existingIds.add(d.id);
-    if (normalizeMoodId(data.moodId) === 'workout') {
-      existingNormalizedKeys.add(normalizeKey(String(data.title ?? '')));
-    }
-
-    if (d.id === 'mt-hi-2') {
-      deleteSongIds.push(d.id);
-      migratedSongs += 1;
-      return;
-    }
-
-    if (d.id === 'wk-hi-1' && data.providerTrackId === 'uQF7_gAW4W0') {
-      songsToSync.push({
-        mode: 'update',
-        id: d.id,
-        title: 'Zinda',
-        artist: String(data.artist ?? 'Siddharth Mahadevan · Shankar-Ehsaan-Loy'),
-        album: 'Bhaag Milkha Bhaag',
-        language: String(data.language ?? 'Hindi'),
-        moodId: 'workout',
-        provider: 'youtube',
-        providerTrackId: 'gdqFLjWU8x8',
-        artworkUrl: 'https://i.ytimg.com/vi/gdqFLjWU8x8/hqdefault.jpg',
-        durationLabel: String(data.durationLabel ?? '3:30'),
-        durationSeconds: Number(data.durationSeconds ?? 210),
-        isLive: Boolean(data.isLive),
-        keywords: Array.isArray(data.keywords) ? data.keywords.map(String) : [],
-      });
-      migratedSongs += 1;
-      return;
-    }
-
     if (data.moodId === 'motivation') {
       songsToSync.push({
         mode: 'update',
@@ -586,7 +508,12 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
           typeof data.description === 'string' ? data.description : undefined,
         language: String(data.language ?? 'Hindi'),
         moodId: 'workout',
-        provider: data.provider === 'audio' ? 'audio' : data.provider === 'pending' ? 'pending' : 'youtube',
+        provider:
+          data.provider === 'audio'
+            ? 'audio'
+            : data.provider === 'pending'
+              ? 'pending'
+              : 'youtube',
         providerTrackId: String(data.providerTrackId ?? ''),
         audioUrl: typeof data.audioUrl === 'string' ? data.audioUrl : undefined,
         artworkUrl: String(data.artworkUrl ?? ''),
@@ -599,42 +526,9 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
     }
   });
 
-  const workoutStarterTracks = TRACKS.filter((t) => t.moodId === 'workout');
-  workoutStarterTracks.forEach((track) => {
-    const safeId = track.id.replace(/[^a-zA-Z0-9_-]/g, '_');
-    const normTitle = normalizeKey(track.title);
-    if (existingIds.has(safeId) || existingNormalizedKeys.has(normTitle)) {
-      return;
-    }
-
-    songsToSync.push({
-      id: safeId,
-      title: track.title.slice(0, 160),
-      artist: track.artist.slice(0, 160),
-      ...(track.album ? { album: track.album.slice(0, 160) } : {}),
-      ...(track.description
-        ? { description: track.description.slice(0, 600) }
-        : {}),
-      language: track.language.slice(0, 40),
-      moodId: 'workout',
-      provider: track.provider,
-      providerTrackId: track.providerTrackId.slice(0, 512),
-      artworkUrl: track.artworkUrl.slice(0, 1024),
-      durationLabel: track.durationLabel.slice(0, 20),
-      durationSeconds: Math.min(
-        86400,
-        Math.max(0, Math.round(track.durationSeconds))
-      ),
-      isLive: Boolean(track.isLive),
-      keywords: track.keywords.slice(0, 20),
-    });
-    addedSongs += 1;
-  });
-
   if (
     moodsToUpsert.length > 0 ||
     deleteMoodIds.length > 0 ||
-    deleteSongIds.length > 0 ||
     songsToSync.length > 0
   ) {
     await adminApiRequest<{ committed: number }>('/api/admin/catalog/sync', {
@@ -642,13 +536,28 @@ export async function syncWorkoutCatalogUpgrade(): Promise<{
       body: JSON.stringify({
         moods: moodsToUpsert,
         deleteMoodIds,
-        deleteSongIds,
         songs: songsToSync,
       }),
     });
   }
 
-  return { migratedSongs, addedSongs, mergedMood };
+  return { migratedSongs, addedSongs: 0, mergedMood };
+}
+
+export async function clearAllSongsInFirestore(
+  songIds: string[]
+): Promise<{ deletedCount: number }> {
+  const uniqueIds = Array.from(new Set(songIds.filter(Boolean)));
+  if (uniqueIds.length === 0) {
+    return { deletedCount: 0 };
+  }
+  await adminApiRequest<{ committed: number }>('/api/admin/catalog/sync', {
+    method: 'POST',
+    body: JSON.stringify({
+      deleteSongIds: uniqueIds,
+    }),
+  });
+  return { deletedCount: uniqueIds.length };
 }
 
 export function findDuplicateSong(

@@ -334,6 +334,7 @@ export function CategoryMusicView({
 
                   <button
                     type="button"
+                    disabled={playlist.tracks.length === 0}
                     onClick={(e) => {
                       e.stopPropagation();
                       handlePlaylistPlay(playlist);
@@ -343,7 +344,7 @@ export function CategoryMusicView({
                         ? `Pause ${playlist.title}`
                         : `Play ${playlist.title}`
                     }
-                    className={`w-11 h-11 rounded-xl shrink-0 flex items-center justify-center transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
+                    className={`w-11 h-11 rounded-xl shrink-0 flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white ${
                       isSelected
                         ? 'bg-[#B6FF00] text-[#08090D] shadow-[0_0_16px_-3px_rgba(182,255,0,0.5)]'
                         : 'bg-white/[0.07] text-white group-hover:bg-[#B6FF00] group-hover:text-[#08090D]'
@@ -387,10 +388,20 @@ export function CategoryMusicView({
               ? `${category.title} · ${activePlaylist.title}`
               : category.title
           }
-          emptyTitle={`No ${languageFilter} songs in ${
-            activePlaylist ? activePlaylist.title : category.title
-          }`}
-          emptyDescription="Switch to All Languages or clear the active playlist filter to view every song."
+          emptyTitle={
+            allCategoryTracks.length === 0
+              ? `No songs in ${
+                  activePlaylist ? activePlaylist.title : category.title
+                } yet`
+              : `No ${languageFilter} songs in ${
+                  activePlaylist ? activePlaylist.title : category.title
+                }`
+          }
+          emptyDescription={
+            allCategoryTracks.length === 0
+              ? 'This category is clean and ready for your new song collection.'
+              : 'Switch to All Languages or clear the active playlist filter to view every song.'
+          }
         />
       </section>
     </div>

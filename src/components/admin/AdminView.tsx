@@ -16,6 +16,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { usePlayer } from '../../context/PlayerContext';
 import { auth, googleAuthProvider } from '../../lib/firebase';
 import {
+  clearAllSongsInFirestore,
   deleteSongFromFirestore,
   seedStarterCatalogIfEmpty,
   syncWorkoutCatalogUpgrade,
@@ -56,6 +57,8 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
   const [editingTrack, setEditingTrack] = useState<Track | null>(null);
   const [deletingTrack, setDeletingTrack] = useState<Track | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
+  const [isClearingAll, setIsClearingAll] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -125,44 +128,31 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     }
   }, [authLoading, isAuthorized, isServerError, user]);
 
-  // Auto-sync starter catalog or Workout merge migration once when authorized admin visits
+  // Sync mood/language metadata only if legacy migration is needed (never seeds starter songs)
   useEffect(() => {
     if (!isAuthorized) return;
-    if (hasCloudCatalog && !needsWorkoutMigration) return;
+    if (!needsWorkoutMigration) return;
 
     let cancelled = false;
     setIsSyncing(true);
 
-    const task = !hasCloudCatalog
-      ? seedStarterCatalogIfEmpty().then((res) => {
-          if (!cancelled && res.seededSongs > 0) {
-            setFeedbackMessage(
-              `Synced ${res.seededSongs} starter songs to Firestore.`
-            );
-          }
-        })
-      : syncWorkoutCatalogUpgrade().then((res) => {
-          if (
-            !cancelled &&
-            (res.mergedMood || res.migratedSongs > 0 || res.addedSongs > 0)
-          ) {
-            setFeedbackMessage(
-              `Merged Motivation into WORKOUT 🔥 and synced ${res.addedSongs} new Workout songs.`
-            );
-          }
-        });
-
-    task
+    syncWorkoutCatalogUpgrade()
+      .then((res) => {
+        if (!cancelled && (res.mergedMood || res.migratedSongs > 0)) {
+          setFeedbackMessage('Synced mood category metadata in Firestore.');
+        }
+      })
       .catch(() => {
         // Admin can also trigger manual sync if needed
       })
       .finally(() => {
         if (!cancelled) setIsSyncing(false);
       });
+
     return () => {
       cancelled = true;
     };
-  }, [hasCloudCatalog, isAuthorized, needsWorkoutMigration]);
+  }, [isAuthorized, needsWorkoutMigration]);
 
   const handleGoogleSignIn = async () => {
     setAuthError(null);
@@ -209,24 +199,23 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
     setActionError(null);
     setIsSyncing(true);
     try {
-      if (!hasCloudCatalog) {
-        const res = await seedStarterCatalogIfEmpty();
-        if (res.seededSongs > 0 || res.seededMoods > 0) {
-          setFeedbackMessage(
-            `Synced ${res.seededSongs} songs, ${res.seededMoods} moods, and ${res.seededLanguages} languages.`
-          );
-        } else {
-          setFeedbackMessage('Cloud catalog is already synced.');
-        }
+      const [metaRes, workoutRes] = await Promise.all([
+        seedStarterCatalogIfEmpty(),
+        syncWorkoutCatalogUpgrade(),
+      ]);
+      if (
+        metaRes.seededMoods > 0 ||
+        metaRes.seededLanguages > 0 ||
+        workoutRes.mergedMood ||
+        workoutRes.migratedSongs > 0
+      ) {
+        setFeedbackMessage('Synced mood and language categories in Firestore.');
       } else {
-        const res = await syncWorkoutCatalogUpgrade();
-        setFeedbackMessage(
-          `Synced WORKOUT 🔥 catalog (${res.addedSongs} added, ${res.migratedSongs} migrated).`
-        );
+        setFeedbackMessage('Mood and language categories are already up to date.');
       }
     } catch (err) {
       setActionError(
-        err instanceof Error ? err.message : 'Failed to sync starter catalog.'
+        err instanceof Error ? err.message : 'Failed to sync categories.'
       );
     } finally {
       setIsSyncing(false);
@@ -247,6 +236,30 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
       );
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleConfirmClearAll = async () => {
+    if (tracks.length === 0) {
+      setConfirmClearAll(false);
+      return;
+    }
+    setIsClearingAll(true);
+    setActionError(null);
+    try {
+      const { deletedCount } = await clearAllSongsInFirestore(
+        tracks.map((t) => t.id)
+      );
+      setFeedbackMessage(
+        `Cleared ${deletedCount} ${deletedCount === 1 ? 'song' : 'songs'} from Firestore.`
+      );
+      setConfirmClearAll(false);
+    } catch (err) {
+      setActionError(
+        err instanceof Error ? err.message : 'Failed to clear songs.'
+      );
+    } finally {
+      setIsClearingAll(false);
     }
   };
 
@@ -407,7 +420,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          {(!hasCloudCatalog || needsWorkoutMigration) && (
+          {needsWorkoutMigration && (
             <button
               type="button"
               onClick={handleManualSync}
@@ -419,9 +432,18 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               ) : (
                 <Database className="w-4 h-4" />
               )}
-              <span>
-                {!hasCloudCatalog ? 'Sync Starter Catalog' : 'Sync WORKOUT Upgrade'}
-              </span>
+              <span>Sync Categories</span>
+            </button>
+          )}
+
+          {tracks.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setConfirmClearAll(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-xs sm:text-sm font-medium text-rose-300 border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 whitespace-nowrap"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Clear All Songs</span>
             </button>
           )}
 
@@ -479,7 +501,7 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
             {tracks.length}
           </p>
           <p className="mt-1 text-xs text-[#B6FF00]">
-            {hasCloudCatalog ? 'Live in Firestore' : 'Starter catalog'}
+            {hasCloudCatalog ? 'Live in Firestore' : 'Clean library · Ready for new songs'}
           </p>
         </div>
 
@@ -572,10 +594,14 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
         {filteredSongs.length === 0 ? (
           <div className="p-10 text-center">
             <p className="font-display text-base font-semibold text-white">
-              No songs match your filters
+              {tracks.length === 0
+                ? 'No songs in library yet'
+                : 'No songs match your filters'}
             </p>
             <p className="mt-1 text-xs text-[#A1A1AA]">
-              Adjust your search or click &ldquo;Add New Song&rdquo; to publish a track.
+              {tracks.length === 0
+                ? 'Click "Add New Song" to start building your verified music collection.'
+                : 'Adjust your search or click "Add New Song" to publish a track.'}
             </p>
           </div>
         ) : (
@@ -744,6 +770,54 @@ export function AdminView({ onExitAdmin }: AdminViewProps) {
               >
                 {isDeleting && <Loader2 className="w-4 h-4 animate-spin" />}
                 <span>Delete Song</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear All Songs Confirmation Dialog */}
+      {confirmClearAll && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-all-confirm-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-rose-500/35 bg-[#0F1118] p-6 space-y-5 shadow-2xl">
+            <div>
+              <h2
+                id="clear-all-confirm-title"
+                className="font-display text-lg font-bold text-white"
+              >
+                Clear All Songs
+              </h2>
+              <p className="mt-2 text-sm text-slate-300 leading-relaxed">
+                Are you sure you want to permanently remove all{' '}
+                <span className="font-semibold text-white">
+                  {tracks.length} {tracks.length === 1 ? 'song' : 'songs'}
+                </span>{' '}
+                from Firestore? All categories, moods, and playlist structures will remain intact.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              <button
+                type="button"
+                disabled={isClearingAll}
+                onClick={() => setConfirmClearAll(false)}
+                className="px-4 py-2.5 min-h-[42px] rounded-xl text-sm font-medium text-slate-300 hover:text-white border border-white/[0.1]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isClearingAll}
+                onClick={handleConfirmClearAll}
+                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[42px] rounded-xl text-sm font-semibold text-white bg-rose-600 hover:bg-rose-500 disabled:opacity-60"
+              >
+                {isClearingAll && <Loader2 className="w-4 h-4 animate-spin" />}
+                <span>Clear All Songs</span>
               </button>
             </div>
           </div>

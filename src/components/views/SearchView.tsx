@@ -8,10 +8,10 @@ import { TrackList } from '../TrackList';
 const QUICK_PROMPTS = [
   'Hindi',
   'Marathi',
-  'Arijit Singh',
-  'Ajay-Atul',
-  'Lofi',
+  'English',
+  'Instrumental',
   'Workout',
+  'Chill',
   'Romantic',
   'Devotional',
 ];
@@ -65,7 +65,7 @@ export function SearchView() {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Try 'Lofi', 'Beethoven', 'Workout', 'Night Drive'..."
+          placeholder="Search by song title, artist, language, or mood..."
           aria-label="Search songs, artists, or moods"
           className="w-full h-13 pl-12 pr-12 rounded-2xl border border-white/[0.1] bg-[#0F1118] text-sm sm:text-base text-white placeholder:text-[#A1A1AA]/60 focus:outline-none focus:border-[#B6FF00] focus:ring-2 focus:ring-[#B6FF00]/25 transition-all"
         />
@@ -118,8 +118,16 @@ export function SearchView() {
       <TrackList
         tracks={filteredTracks}
         showMoodName
-        emptyTitle="No matching songs found"
-        emptyDescription="Try searching by another mood keyword like Chill, Piano, Study, or Workout."
+        emptyTitle={
+          tracks.length === 0
+            ? 'No songs in your library yet'
+            : 'No matching songs found'
+        }
+        emptyDescription={
+          tracks.length === 0
+            ? 'Add verified tracks through the Admin Panel and they will appear here instantly.'
+            : 'Try searching by another title, artist, language, or mood keyword.'
+        }
       />
     </div>
   );

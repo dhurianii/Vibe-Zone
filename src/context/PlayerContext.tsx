@@ -7,10 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  MOOD_CATEGORIES as STATIC_MOODS,
-  TRACKS as STATIC_TRACKS,
-} from '../data/moodsAndTracks';
+import { MOOD_CATEGORIES as STATIC_MOODS } from '../data/moodsAndTracks';
 import {
   subscribeToLanguages,
   subscribeToMoods,
@@ -30,8 +27,10 @@ import {
   Track,
 } from '../types/music';
 
-const STORAGE_FAVOURITES = 'sona_favourites_v1';
-const STORAGE_RECENT = 'sona_recent_v1';
+const STORAGE_FAVOURITES = 'sona_favourites_v2';
+const STORAGE_RECENT = 'sona_recent_v2';
+const LEGACY_STORAGE_FAVOURITES = 'sona_favourites_v1';
+const LEGACY_STORAGE_RECENT = 'sona_recent_v1';
 const STORAGE_VOLUME = 'sona_volume_v1';
 
 export type RepeatMode = 'off' | 'all' | 'one';
@@ -109,51 +108,13 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const activeProviderRef = useRef<ProviderType>('youtube');
 
   const [cloudSongs, setCloudSongs] = useState<Track[]>([]);
+  const [hasLoadedCloudSongs, setHasLoadedCloudSongs] = useState(false);
   const [hasCloudCatalog, setHasCloudCatalog] = useState(false);
   const [needsWorkoutMigration, setNeedsWorkoutMigration] = useState(false);
   const [moods, setMoods] = useState<MoodCategory[]>(STATIC_MOODS);
   const [languages, setLanguages] = useState<string[]>(DEFAULT_LANGUAGES);
 
-  // Merge cloud songs when available; bridge new Workout tracks seamlessly if Firestore hasn't migrated yet
-  const tracks = useMemo(() => {
-    if (cloudSongs.length === 0) {
-      return STATIC_TRACKS;
-    }
-    if (!needsWorkoutMigration) {
-      return cloudSongs;
-    }
-
-    const normalizeKey = (title: string) =>
-      title
-        .toLowerCase()
-        .replace(/\(.*?\)/g, '')
-        .replace(/[^a-z0-9]+/g, ' ')
-        .trim();
-
-    const patchedCloud = cloudSongs.map((t) => {
-      if (t.id === 'wk-hi-1' && t.providerTrackId === 'uQF7_gAW4W0') {
-        const freshZinda = STATIC_TRACKS.find((s) => s.id === 'wk-hi-1');
-        return freshZinda ?? t;
-      }
-      return t;
-    });
-
-    const seenIds = new Set(patchedCloud.map((t) => t.id));
-    const seenWorkoutTitles = new Set(
-      patchedCloud
-        .filter((t) => t.moodId === 'workout')
-        .map((t) => normalizeKey(t.title))
-    );
-
-    const missingWorkout = STATIC_TRACKS.filter(
-      (t) =>
-        t.moodId === 'workout' &&
-        !seenIds.has(t.id) &&
-        !seenWorkoutTitles.has(normalizeKey(t.title))
-    );
-
-    return [...patchedCloud, ...missingWorkout];
-  }, [cloudSongs, needsWorkoutMigration]);
+  const tracks = cloudSongs;
 
   // Ensure any custom language present on tracks also appears in language filters
   const availableLanguages = useMemo(() => {
@@ -189,9 +150,7 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   );
   const [languageFilter, setLanguageFilter] = useState<LanguageFilter>('All');
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
-  const [queue, setQueue] = useState<Track[]>(() =>
-    STATIC_TRACKS.filter((t) => t.moodId === 'chill')
-  );
+  const [queue, setQueue] = useState<Track[]>([]);
   const [status, setStatus] = useState<PlaybackStatus>('idle');
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -247,10 +206,21 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     activeCategoryLabelRef.current = activeCategoryLabel;
   }, [activeCategoryLabel]);
 
+  // Purge legacy v1 localStorage song references so cleared songs never reappear
+  useEffect(() => {
+    try {
+      localStorage.removeItem(LEGACY_STORAGE_FAVOURITES);
+      localStorage.removeItem(LEGACY_STORAGE_RECENT);
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
   // Subscribe to Firestore live catalog
   useEffect(() => {
     const unsubSongs = subscribeToSongs((items) => {
       setCloudSongs(items);
+      setHasLoadedCloudSongs(true);
       setHasCloudCatalog(items.length > 0);
     });
     const unsubMoods = subscribeToMoods((items, needsMigration) => {
@@ -268,14 +238,36 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  // Keep currentTrack metadata synced if edited in Admin
+  // Keep currentTrack and queue synced if edited or deleted in Admin
   useEffect(() => {
+    if (!hasLoadedCloudSongs) return;
+
+    const trackMap = new Map(tracks.map((t) => [t.id, t]));
+
+    setQueue((prev) => {
+      const next = prev
+        .map((item) => trackMap.get(item.id))
+        .filter((t): t is Track => Boolean(t));
+      return next.length === prev.length &&
+        next.every((item, idx) => item === prev[idx])
+        ? prev
+        : next;
+    });
+
     if (!currentTrack) return;
-    const updated = tracks.find((t) => t.id === currentTrack.id);
-    if (updated && updated !== currentTrack) {
+    const updated = trackMap.get(currentTrack.id);
+    if (!updated) {
+      ytProviderRef.current?.pause();
+      audioProviderRef.current?.pause();
+      setCurrentTrack(null);
+      setStatus('idle');
+      setCurrentTime(0);
+      setDuration(0);
+      setErrorMessage(null);
+    } else if (updated !== currentTrack) {
       setCurrentTrack(updated);
     }
-  }, [currentTrack, tracks]);
+  }, [currentTrack, hasLoadedCloudSongs, tracks]);
 
   // Persist favourites
   useEffect(() => {

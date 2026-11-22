@@ -356,7 +356,7 @@ export function SongFormModal({
                 maxLength={160}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Kesariya"
+                placeholder="Enter song title"
                 className="w-full h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#08090D] text-sm text-white placeholder:text-[#A1A1AA]/55 focus:outline-none focus:border-[#B6FF00]"
               />
             </label>
@@ -371,7 +371,7 @@ export function SongFormModal({
                 maxLength={160}
                 value={artist}
                 onChange={(e) => setArtist(e.target.value)}
-                placeholder="e.g. Arijit Singh"
+                placeholder="Enter artist name"
                 className="w-full h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#08090D] text-sm text-white placeholder:text-[#A1A1AA]/55 focus:outline-none focus:border-[#B6FF00]"
               />
             </label>
@@ -388,7 +388,7 @@ export function SongFormModal({
                 maxLength={160}
                 value={album}
                 onChange={(e) => setAlbum(e.target.value)}
-                placeholder="e.g. Brahmāstra"
+                placeholder="Enter album or film name"
                 className="w-full h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#08090D] text-sm text-white placeholder:text-[#A1A1AA]/55 focus:outline-none focus:border-[#B6FF00]"
               />
             </label>
@@ -508,7 +508,7 @@ export function SongFormModal({
                   required
                   value={youtubeInput}
                   onChange={(e) => setYoutubeInput(e.target.value)}
-                  placeholder="e.g. BddP6PYo2gs or https://www.youtube.com/watch?v=BddP6PYo2gs"
+                  placeholder="Paste 11-character YouTube Video ID or full YouTube URL"
                   className="w-full h-11 px-3.5 rounded-xl border border-white/[0.1] bg-[#08090D] font-mono text-sm text-white placeholder:text-[#A1A1AA]/55 focus:outline-none focus:border-[#B6FF00]"
                 />
                 {resolvedYoutubeId && (

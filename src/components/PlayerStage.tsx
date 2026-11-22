@@ -5,6 +5,7 @@ import {
   Heart,
   ListMusic,
   Loader2,
+  Music2,
   Pause,
   Play,
   Repeat,
@@ -260,7 +261,7 @@ export function PlayerStage() {
                 />
               )}
 
-              {/* Large Centered Album Artwork */}
+              {/* Large Centered Album Artwork or Clean Empty State */}
               {isTheaterOpen && !isVideoVisible && currentTrack && (
                 <motion.div
                   initial={
@@ -287,6 +288,20 @@ export function PlayerStage() {
                     </div>
                   )}
                 </motion.div>
+              )}
+
+              {isTheaterOpen && !currentTrack && (
+                <div className="relative w-full h-full rounded-3xl border border-[#9D4EDD]/35 bg-[#0F1118] flex flex-col items-center justify-center p-6 text-center shadow-[0_24px_70px_-15px_rgba(0,0,0,0.85)]">
+                  <div className="w-16 h-16 rounded-2xl bg-[#9D4EDD]/15 border border-[#9D4EDD]/40 flex items-center justify-center text-[#B6FF00]">
+                    <Music2 className="w-8 h-8" />
+                  </div>
+                  <p className="mt-4 font-display text-lg font-semibold text-white">
+                    No song selected
+                  </p>
+                  <p className="mt-1.5 text-xs text-[#A1A1AA] leading-relaxed">
+                    Choose a song from any category or add new tracks in the Admin Panel.
+                  </p>
+                </div>
               )}
 
               {/* Invariant Provider Container (NEVER unmounted across views) */}
@@ -552,45 +567,56 @@ export function PlayerStage() {
                 </button>
               </div>
 
-              <div className="divide-y divide-white/[0.06] max-h-[360px] lg:max-h-[460px] overflow-y-auto pr-1">
-                {queue.map((track) => {
-                  const active = currentTrack?.id === track.id;
-                  return (
-                    <button
-                      key={track.id}
-                      type="button"
-                      onClick={() =>
-                        playTrack(track, queue, activeCategoryLabel)
-                      }
-                      className={`w-full flex items-center gap-3 py-2.5 px-2.5 rounded-xl text-left transition-colors ${
-                        active
-                          ? 'bg-gradient-to-r from-[#9D4EDD]/25 to-[#B6FF00]/12 text-white border border-[#B6FF00]/30'
-                          : 'hover:bg-white/[0.05] text-white/90'
-                      }`}
-                    >
-                      <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-white/[0.1]">
-                        <ArtworkImage
-                          src={track.artworkUrl}
-                          fallbackSrc={track.fallbackArtwork}
-                          alt={track.title}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className={`text-sm font-medium truncate ${active ? 'text-[#B6FF00]' : 'text-white'}`}>
-                          {track.title}
-                        </p>
-                        <p className="text-xs text-[#A1A1AA] truncate">
-                          {track.artist}
-                        </p>
-                      </div>
-                      <span className="font-mono text-xs text-[#A1A1AA] tabular-nums shrink-0">
-                        {track.durationLabel}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+              {queue.length === 0 ? (
+                <div className="py-10 text-center">
+                  <p className="text-sm font-medium text-white">
+                    Queue is empty
+                  </p>
+                  <p className="mt-1 text-xs text-[#A1A1AA]">
+                    Songs you play or queue will appear here.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-white/[0.06] max-h-[360px] lg:max-h-[460px] overflow-y-auto pr-1">
+                  {queue.map((track) => {
+                    const active = currentTrack?.id === track.id;
+                    return (
+                      <button
+                        key={track.id}
+                        type="button"
+                        onClick={() =>
+                          playTrack(track, queue, activeCategoryLabel)
+                        }
+                        className={`w-full flex items-center gap-3 py-2.5 px-2.5 rounded-xl text-left transition-colors ${
+                          active
+                            ? 'bg-gradient-to-r from-[#9D4EDD]/25 to-[#B6FF00]/12 text-white border border-[#B6FF00]/30'
+                            : 'hover:bg-white/[0.05] text-white/90'
+                        }`}
+                      >
+                        <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 border border-white/[0.1]">
+                          <ArtworkImage
+                            src={track.artworkUrl}
+                            fallbackSrc={track.fallbackArtwork}
+                            alt={track.title}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-sm font-medium truncate ${active ? 'text-[#B6FF00]' : 'text-white'}`}>
+                            {track.title}
+                          </p>
+                          <p className="text-xs text-[#A1A1AA] truncate">
+                            {track.artist}
+                          </p>
+                        </div>
+                        <span className="font-mono text-xs text-[#A1A1AA] tabular-nums shrink-0">
+                          {track.durationLabel}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>

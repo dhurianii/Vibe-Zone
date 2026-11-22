@@ -103,17 +103,6 @@ export const ACTIVITY_CATEGORIES: ExperienceCategoryConfig[] = [
         id: 'wk-motivation-mix',
         title: 'Motivation Mix',
         subtitle: 'Relentless mindset & training anthems',
-        trackIds: [
-          'wk-hi-1',
-          'wk-hi-sultan',
-          'mt-hi-1',
-          'wk-hi-apna-time',
-          'wk-hi-lakshya',
-          'wk-hi-aarambh',
-          'wk-hi-brothers',
-          'mt-mr-1',
-          'mt-en-1',
-        ],
         keywords: ['motivation', 'inspiration', 'anthem'],
       },
     ],
@@ -130,21 +119,11 @@ export const ACTIVITY_CATEGORIES: ExperienceCategoryConfig[] = [
     curatorNote: 'Fresh acoustic rhythms and sunrise melodies for open air strides.',
     primaryMoodId: 'peaceful',
     sourceMoodIds: ['peaceful', 'travel'],
-    preferredTrackIds: [
-      'tr-hi-1',
-      'pc-mr-1',
-      'tr-hi-2',
-      'pc-hi-2',
-      'tr-mr-1',
-      'tr-en-1',
-      'pc-hi-1',
-    ],
     playlists: [
       {
         id: 'mw-fresh-morning',
         title: 'Fresh Morning',
         subtitle: 'Bright vocal tracks for early strides',
-        trackIds: ['tr-hi-1', 'tr-hi-2', 'pc-hi-2', 'tr-en-1'],
         languages: ['Hindi'],
       },
       {
@@ -233,14 +212,6 @@ export const ACTIVITY_CATEGORIES: ExperienceCategoryConfig[] = [
     curatorNote: 'Moonlit ambient piano, gentle lo-fi, and unhurried midnight calm.',
     primaryMoodId: 'chill',
     sourceMoodIds: ['chill', 'peaceful'],
-    preferredTrackIds: [
-      'pc-in-1',
-      'ch-in-1',
-      'rm-in-1',
-      'ch-mr-1',
-      'pc-hi-1',
-      'ch-hi-2',
-    ],
     playlists: [
       {
         id: 'sl-deep-relaxation',
@@ -304,14 +275,6 @@ export const FEEL_CATEGORIES: ExperienceCategoryConfig[] = [
     curatorNote: 'Sunlit rhythms, upbeat Bollywood hits, and joyful momentum.',
     primaryMoodId: 'party',
     sourceMoodIds: ['party', 'travel'],
-    preferredTrackIds: [
-      'pt-mr-1',
-      'pt-hi-1',
-      'tr-hi-1',
-      'tr-en-1',
-      'pt-hi-2',
-      'tr-mr-1',
-    ],
     playlists: [
       {
         id: 'hp-feel-good',
@@ -342,7 +305,7 @@ export const FEEL_CATEGORIES: ExperienceCategoryConfig[] = [
     mode: 'feel',
     title: 'SAD',
     description: 'Intimate vocals and quiet melodies when you need space to feel.',
-    curatorNote: 'Soul-stirring Arijit Singh ballads, Marathi classics, and solo piano.',
+    curatorNote: 'Soul-stirring Hindi ballads, Marathi classics, and solo piano.',
     primaryMoodId: 'sad',
     sourceMoodIds: ['sad'],
     playlists: [
@@ -369,7 +332,7 @@ export const FEEL_CATEGORIES: ExperienceCategoryConfig[] = [
     mode: 'feel',
     title: 'ROMANTIC',
     description: 'Tender duets and warm melodies made for close moments.',
-    curatorNote: 'Timeless Hindi love songs, Ajay-Atul duets, and candlelit piano.',
+    curatorNote: 'Timeless Hindi love songs, soulful Marathi duets, and candlelit piano.',
     primaryMoodId: 'romantic',
     sourceMoodIds: ['romantic'],
     playlists: [
@@ -382,7 +345,7 @@ export const FEEL_CATEGORIES: ExperienceCategoryConfig[] = [
       {
         id: 'rm-marathi-duets',
         title: 'Marathi Duets',
-        subtitle: 'Ajay-Atul & soulful Marathi melodies',
+        subtitle: 'Timeless & soulful Marathi melodies',
         languages: ['Marathi'],
       },
       {
@@ -438,14 +401,6 @@ export const FEEL_CATEGORIES: ExperienceCategoryConfig[] = [
     curatorNote: 'Peak celebration bangers and surging anthems to move the room.',
     primaryMoodId: 'party',
     sourceMoodIds: ['party', 'workout'],
-    preferredTrackIds: [
-      'pt-mr-1',
-      'pt-hi-2',
-      'pt-mr-2',
-      'pt-en-1',
-      'wk-hi-1',
-      'wk-hi-apna-time',
-    ],
     playlists: [
       {
         id: 'en-dancefloor',
@@ -473,15 +428,6 @@ export const FEEL_CATEGORIES: ExperienceCategoryConfig[] = [
     curatorNote: 'Classic acoustic favorites, reflective melodies, and golden moments.',
     primaryMoodId: 'chill',
     sourceMoodIds: ['chill', 'sad', 'romantic'],
-    preferredTrackIds: [
-      'sd-mr-1',
-      'ch-hi-2',
-      'sd-hi-2',
-      'tr-hi-2',
-      'rm-mr-1',
-      'pc-mr-1',
-      'ch-mr-1',
-    ],
     playlists: [
       {
         id: 'ns-hindi-echoes',
@@ -573,8 +519,6 @@ export function getCuratedPlaylistsForCategory(
       }
       return false;
     });
-
-    if (matched.length === 0) continue;
 
     // Sort preferred trackIds first if provided
     const orderMap = spec.trackIds

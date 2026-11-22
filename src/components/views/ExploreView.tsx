@@ -93,8 +93,9 @@ export function ExploreView() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 type="button"
+                disabled={tracks.length === 0}
                 onClick={() => playMood(mood.id, false)}
-                className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:brightness-110 transition-all whitespace-nowrap shadow-[0_6px_20px_rgba(182,255,0,0.22)]"
+                className="inline-flex items-center gap-2 px-5 py-2.5 min-h-[44px] rounded-xl text-sm font-semibold text-[#08090D] bg-[#B6FF00] hover:brightness-110 transition-all whitespace-nowrap shadow-[0_6px_20px_rgba(182,255,0,0.22)] disabled:opacity-50"
               >
                 <Play className="w-4 h-4 fill-current" />
                 <span>Play {mood.name}</span>
@@ -102,8 +103,9 @@ export function ExploreView() {
 
               <button
                 type="button"
+                disabled={tracks.length === 0}
                 onClick={() => playMood(mood.id, true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-medium text-white border border-[#9D4EDD]/45 bg-[#08090D]/60 hover:border-[#B6FF00]/60 transition-colors whitespace-nowrap"
+                className="inline-flex items-center gap-2 px-4 py-2.5 min-h-[44px] rounded-xl text-sm font-medium text-white border border-[#9D4EDD]/45 bg-[#08090D]/60 hover:border-[#B6FF00]/60 transition-colors whitespace-nowrap disabled:opacity-50"
               >
                 <Shuffle className="w-4 h-4 text-[#C77DFF]" />
                 <span>Shuffle</span>
@@ -124,8 +126,16 @@ export function ExploreView() {
       {/* Curated Songs for Selected Mood */}
       <TrackList
         tracks={tracks}
-        emptyTitle={`No ${languageFilter} tracks in ${mood.name}`}
-        emptyDescription="Switch to All Languages or choose another mood tab above."
+        emptyTitle={
+          languageFilter === 'All'
+            ? `No songs in ${mood.name} yet`
+            : `No ${languageFilter} tracks in ${mood.name}`
+        }
+        emptyDescription={
+          languageFilter === 'All'
+            ? 'This mood channel is clean and ready for new songs.'
+            : 'Switch to All Languages or choose another mood tab above.'
+        }
       />
     </div>
   );

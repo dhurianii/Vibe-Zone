@@ -7,7 +7,10 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { MOOD_CATEGORIES as STATIC_MOODS } from '../data/moodsAndTracks';
+import {
+  MOOD_CATEGORIES as STATIC_MOODS,
+  TRACKS as STATIC_TRACKS,
+} from '../data/moodsAndTracks';
 import {
   subscribeToLanguages,
   subscribeToMoods,
@@ -114,7 +117,51 @@ export function PlayerProvider({ children }: { children: React.ReactNode }) {
   const [moods, setMoods] = useState<MoodCategory[]>(STATIC_MOODS);
   const [languages, setLanguages] = useState<string[]>(DEFAULT_LANGUAGES);
 
-  const tracks = cloudSongs;
+  const tracks = useMemo(() => {
+    if (cloudSongs.length === 0) {
+      return STATIC_TRACKS;
+    }
+
+    const cloudById = new Map<string, Track>();
+    const cloudByProviderKey = new Map<string, Track>();
+    for (const song of cloudSongs) {
+      cloudById.set(song.id, song);
+      if (song.provider !== 'pending' && song.providerTrackId) {
+        cloudByProviderKey.set(
+          `${song.provider}:${song.providerTrackId.trim().toLowerCase()}`,
+          song
+        );
+      }
+    }
+
+    const usedCloudIds = new Set<string>();
+    const merged: Track[] = [];
+
+    for (const baseTrack of STATIC_TRACKS) {
+      const providerKey = `${baseTrack.provider}:${baseTrack.providerTrackId
+        .trim()
+        .toLowerCase()}`;
+      const override =
+        cloudById.get(baseTrack.id) ?? cloudByProviderKey.get(providerKey);
+      if (override) {
+        if (!usedCloudIds.has(override.id)) {
+          usedCloudIds.add(override.id);
+          merged.push(override);
+        }
+      } else {
+        merged.push(baseTrack);
+      }
+    }
+
+    for (const song of cloudSongs) {
+      if (!usedCloudIds.has(song.id)) {
+        usedCloudIds.add(song.id);
+        merged.push(song);
+      }
+    }
+
+    return merged;
+  }, [cloudSongs]);
 
   // Ensure any custom language present on tracks also appears in language filters
   const availableLanguages = useMemo(() => {

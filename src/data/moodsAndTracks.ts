@@ -146,6 +146,35 @@ function createLoveTrack(
   };
 }
 
+function createBhaktiTrack(
+  id: string,
+  title: string,
+  artist: string,
+  language: string,
+  youtubeId: string,
+  keywords: string[],
+  album?: string
+): Track {
+  const devotionalMood =
+    MOOD_CATEGORIES.find((m) => m.id === 'devotional') ?? MOOD_CATEGORIES[0];
+  return {
+    id,
+    title,
+    artist,
+    ...(album ? { album } : {}),
+    language,
+    moodId: 'devotional',
+    provider: 'youtube',
+    providerTrackId: youtubeId,
+    durationLabel: '--:--',
+    durationSeconds: 0,
+    isLive: false,
+    artworkUrl: ytThumb(youtubeId),
+    fallbackArtwork: devotionalMood.coverImage,
+    keywords: ['bhakti', 'devotional', language.toLowerCase(), ...keywords],
+  };
+}
+
 export const TRACKS: Track[] = [
   createLoveTrack(
     'love-01',
@@ -452,6 +481,120 @@ export const TRACKS: Track[] = [
     'Marathi',
     '8ImoofUWY9A',
     ['raat chandana', 'keval walanj']
+  ),
+  createBhaktiTrack(
+    'bhakti-01',
+    'Bhakt Chalalaa Shirdi Warila (भक्त चालला शिर्डी वारीला)',
+    'Sagar Chavan',
+    'Marathi',
+    'cAZkhzgvPMs',
+    ['bhakt chalalaa shirdi warila', 'sai palkhi bhajan', 'shirdi', 'sagar chavan']
+  ),
+  createBhaktiTrack(
+    'bhakti-02',
+    'Deva Sobat Chalalo Devachya Bhetila',
+    'Omkar Mahadik · Shravan (Bala) Ingle',
+    'Marathi',
+    '5SNn-NLvUfA',
+    ['deva sobat chalalo', 'sai', 'omkar mahadik', 'shravan ingle'],
+    'Zale Tuze Darshan Sai'
+  ),
+  createBhaktiTrack(
+    'bhakti-03',
+    'Bhandupchi Saibhajan Ahe Majhya Sobtila',
+    'Shree Saibhajan',
+    'Marathi',
+    'woz07Y5Vp6U',
+    ['bhandupchi saibhajan', 'sai bhajan', 'shree saibhajan']
+  ),
+  createBhaktiTrack(
+    'bhakti-04',
+    'Tula Khandyavar Ghein (Reprise Version)',
+    'Suyog Gosavi',
+    'Marathi',
+    'vCKirDrIXEo',
+    ['tula khandyavar ghein', 'suyog gosavi']
+  ),
+  createBhaktiTrack(
+    'bhakti-05',
+    'Shirdichi Vari Baghavi (Sai Palkhi Bhajan)',
+    'Adisai Mankar',
+    'Marathi',
+    '6CZtU7YWVIA',
+    ['shirdichi vari baghavi', 'sai palkhi', 'sai bhajan', 'adisai mankar']
+  ),
+  createBhaktiTrack(
+    'bhakti-06',
+    'Magey Rahila Kasara Ghat Dharli Shirdichi Vaat',
+    'Sai Bhakti',
+    'Marathi',
+    'Zh_thF3Kr68',
+    ['magey rahila kasara ghat', 'shirdichi vaat', 'sai bhakti']
+  ),
+  createBhaktiTrack(
+    'bhakti-07',
+    'Payi Chalat Shirdila Yein',
+    'Omkar Mahadik, Alpesh Mekde · Sai Swar Music',
+    'Marathi',
+    'IoFId0_UFuU',
+    ['payi chalat shirdila yein', 'omkar mahadik', 'alpesh mekde', 'shirdi']
+  ),
+  createBhaktiTrack(
+    'bhakti-08',
+    'Nela Shirdila',
+    'Raj Khambe · Vaibhav Ghanekar',
+    'Marathi',
+    'pKqXwVefJ8I',
+    ['nela shirdila', 'sai baba', 'raj khambe', 'vaibhav ghanekar']
+  ),
+  createBhaktiTrack(
+    'bhakti-09',
+    'Jauya Payi Shirdichya Thai',
+    'Swapnil Tambe · Saichha Bhajan Mandal',
+    'Marathi',
+    'Zzm2O2d2nyY',
+    ['jauya payi shirdichya thai', 'sai baba', 'swapnil tambe']
+  ),
+  createBhaktiTrack(
+    'bhakti-10',
+    'Soduni Aalo Maze Me Ghar Daar',
+    'Shreenath Chavan',
+    'Marathi',
+    'lUkHHT0hw3Q',
+    ['soduni aalo maze me ghar daar', 'shreenath chavan']
+  ),
+  createBhaktiTrack(
+    'bhakti-11',
+    'Swapnat Aale Mazya Gurudev Datta',
+    'DJ Shubham K Official',
+    'Marathi',
+    'XUZEwsQVi8U',
+    ['swapnat aale mazya gurudev datta', 'gurudev datta', 'dj shubham k']
+  ),
+  createBhaktiTrack(
+    'bhakti-12',
+    'Swami Samarth - Majhya Hruday Mandirat',
+    'Adarsh Shinde · Yogesh Anil Tawar',
+    'Marathi',
+    'lVMdrGas-zk',
+    ['swami samarth', 'majhya hruday mandirat', 'adarsh shinde']
+  ),
+  createBhaktiTrack(
+    'bhakti-13',
+    'Swamimay Zalo (स्वामीमय झालो)',
+    'Rohit Raut · Gajar Devacha',
+    'Marathi',
+    'Xbo8YHo3wCA',
+    ['swamimay zalo', 'rohit raut', 'swami samarth', 'gajar devacha']
+  ),
+  createBhaktiTrack(
+    'bhakti-14',
+    'Jagnyache Deva (जगण्याचे देवा)',
+    'Swapnil Bandodkar',
+    'Marathi',
+    'xaUvx0IILW4',
+    ['jagnyache deva', 'dashakriya', 'swapnil bandodkar'],
+    'Dashakriya'
   ),
 ];
 

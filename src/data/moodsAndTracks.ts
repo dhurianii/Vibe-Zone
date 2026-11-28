@@ -654,6 +654,190 @@ export const TRACKS: Track[] = [
     ['jagnyache deva', 'dashakriya', 'swapnil bandodkar'],
     'Dashakriya'
   ),
+  createBhaktiTrack(
+    'bhakti-15',
+    'Yei Ho Vitthale (Vitthal Aarti)',
+    'Nihar Shembekar · Folk.Us',
+    'Marathi',
+    'oHM4zm8OdGU',
+    ['yei ho vitthale', 'vitthal aarti', 'nihar shembekar', 'folk us']
+  ),
+  createBhaktiTrack(
+    'bhakti-16',
+    'Deh Vitthal (देह विठ्ठल)',
+    'Avadhoot Gandhi & Prasad Prabhakar Shinde',
+    'Marathi',
+    'sHVUlXAvCd0',
+    ['deh vitthal', 'wari', 'avadhoot gandhi', 'prasad prabhakar shinde'],
+    'Wari 2024'
+  ),
+  createBhaktiTrack(
+    'bhakti-17',
+    'Rakhumai Rakhumai',
+    'Amitraj · Everest Marathi',
+    'Marathi',
+    'RVj23ZyTcMY',
+    ['rakhumai rakhumai', 'poshter girl', 'vitthal rukmini', 'amitraj'],
+    'Poshter Girl'
+  ),
+  createBhaktiTrack(
+    'bhakti-18',
+    'Aamhi Pahila Vitthal',
+    'Yogesh Anil Tawar, Saurabha Salunke & Prasad Shinde',
+    'Marathi',
+    'fjgM0DXLIOw',
+    ['aamhi pahila vitthal', 'vari song', 'yogesh anil tawar', 'saurabha salunke', 'prasad shinde']
+  ),
+  createBhaktiTrack(
+    'bhakti-19',
+    'Vithu Rayachi Nagari',
+    'Dravesh Patil · Pankaj Harad',
+    'Marathi',
+    'BelCkZxsdRI',
+    ['vithu rayachi nagari', 'dravesh patil', 'pankaj harad', 'vitthal']
+  ),
+  createBhaktiTrack(
+    'bhakti-20',
+    'Ringan (रिंगण · रंगी तुझ्या सोहळ्याच्या रिंगणी)',
+    'Adarsh Shinde',
+    'Marathi',
+    'WUCSBZ23z90',
+    ['ringan', 'rangi tuzya sohalyachya ringani', 'adarsh shinde', 'wari'],
+    'Wari 2020'
+  ),
+  createBhaktiTrack(
+    'bhakti-21',
+    'Majha Vitthal (माझा विठ्ठल)',
+    'Ajay Gogavale · Abhinay Jagtap',
+    'Marathi',
+    'JBAyL9eu0C4',
+    ['majha vitthal', 'danka hari namacha', 'ajay gogavale', 'abhinay jagtap'],
+    'Danka Hari Namacha'
+  ),
+  createBhaktiTrack(
+    'bhakti-22',
+    'Nazar Kadh Deva',
+    'Bhakti chhand (भक्ती छंद)',
+    'Marathi',
+    'schSLWVM_gA',
+    ['nazar kadh deva', 'bhakti chhand']
+  ),
+  createBhaktiTrack(
+    'bhakti-23',
+    'Swami (स्वामी)',
+    'Avdhoot Gandhi · Brahmaa & Narhar',
+    'Marathi',
+    'WY7mogD-o3I',
+    ['swami', 'swami samarth', 'avdhoot gandhi', 'brahmaa']
+  ),
+  createBhaktiTrack(
+    'bhakti-24',
+    'Sai Digambara',
+    'Ajay Gogavale · Aditya Satpute & Nitin Ugalmugle',
+    'Marathi',
+    'YnOhMpOZ0Pw',
+    ['sai digambara', 'sai baba', 'ajay gogavale']
+  ),
+  createBhaktiTrack(
+    'bhakti-25',
+    'Mauli Swami Samartha',
+    'Adarsh Shinde',
+    'Marathi',
+    '6B5I7r3iFxs',
+    ['mauli swami samartha', 'swami samarth', 'adarsh shinde']
+  ),
+  createBhaktiTrack(
+    'bhakti-26',
+    'Vithu (विठू)',
+    'Reyan Wavre · Pravin Koli & Yogita Koli',
+    'Marathi',
+    'usFJYr7DUXw',
+    ['vithu', 'vaari', 'reyan wavre', 'pravin koli', 'yogita koli']
+  ),
+  createBhaktiTrack(
+    'bhakti-27',
+    'Ba Vitthala Dhav Pav Re (बा विठ्ठल धाव पाव रे)',
+    'Suresh Wadkar (सुरेश वाडकर)',
+    'Marathi',
+    '5VVZaKnfkaI',
+    ['ba vitthala dhav pav re', 'hari om vithala', 'suresh wadkar'],
+    'Hari Om Vithala'
+  ),
+  createBhaktiTrack(
+    'bhakti-28',
+    'Mauli Mauli (माऊली माऊली)',
+    'Ajay-Atul',
+    'Marathi',
+    '3fgxIrJ_VXo',
+    ['mauli mauli', 'ajay atul', 'vitthal']
+  ),
+  createBhaktiTrack(
+    'bhakti-29',
+    'Malvat',
+    'Ajay Gogavale · Vijay Gavande',
+    'Marathi',
+    'fbv1dyRiav0',
+    ['malvat', 'soyrik', 'ajay gogavale', 'vijay gavande', 'navratri'],
+    'Soyrik (सोयरीक)'
+  ),
+  createBhaktiTrack(
+    'bhakti-30',
+    'Lallati Bhandar',
+    'Ajay-Atul',
+    'Marathi',
+    '6qwOQe2BiYY',
+    ['lallati bhandar', 'jogwa', 'ajay atul'],
+    'Jogwa'
+  ),
+  createBhaktiTrack(
+    'bhakti-31',
+    'Majhi Mauli',
+    'Tejas Padave · Kiran Ghanekar',
+    'Marathi',
+    'td5JgDcfsoA',
+    ['majhi mauli', 'tejas padave', 'kiran ghanekar']
+  ),
+  createBhaktiTrack(
+    'bhakti-32',
+    'Aai Tuza Dongar (आई तुझा डोंगर)',
+    'Amol Jadhav · Sai Swar Music',
+    'Marathi',
+    'hCCKT7Bub_Y',
+    ['aai tuza dongar', 'ekveera aai', 'amol jadhav', 'sai swar music']
+  ),
+  createBhaktiTrack(
+    'bhakti-33',
+    'Ambabai Gondhalala Ye',
+    'Ajay Gogavale',
+    'Marathi',
+    'sx2W-g3bhvI',
+    ['ambabai gondhalala ye', 'ambabai', 'ajay gogavale']
+  ),
+  createBhaktiTrack(
+    'bhakti-34',
+    'Aaicha Udo Udo',
+    'Adarsh Shinde',
+    'Marathi',
+    'L98WGIPkUQ0',
+    ['aaicha udo udo', 'kho kho', 'adarsh shinde'],
+    'Kho Kho'
+  ),
+  createBhaktiTrack(
+    'bhakti-35',
+    'Aaicha Sohala',
+    'Mukesh Upadhye & Shakambhari · Pravin Koli & Yogita Koli',
+    'Marathi',
+    '4_MHICgXgVs',
+    ['aaicha sohala', 'ekveera aai', 'mukesh upadhye', 'pravin koli', 'yogita koli']
+  ),
+  createBhaktiTrack(
+    'bhakti-36',
+    'Jaise Jayache Karma (जैसे ज्याचे कर्म)',
+    'Prahlad Shinde',
+    'Marathi',
+    'FLlAlD4Q7aA',
+    ['jaise jayache karma', 'prahlad shinde']
+  ),
   createSadTrack(
     'sad-01',
     'Vo Nahin',
